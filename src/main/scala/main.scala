@@ -1,8 +1,13 @@
 package org.tp.process_time_state
 
+import cats.data.NonEmptyList
+import cats.syntax.either.*
+import cats.syntax.validated.*
+import cats.implicits.*
 import Commands.*
 import Events.*
 import States.*
+import BehaviorF.*
 
 import java.util.UUID
 
@@ -32,6 +37,40 @@ enum States:
   )
   case Active(userId: UserId, email: Email)
   case Deleted(userId: UserId)
+
+sealed trait DomainError extends Throwable {
+  def msg: String
+  final override def getMessage: String = this.msg
+}
+
+final case class InvalidToken(token: Token) extends DomainError {
+  override def msg: String = s"Token '${token.value}' is invalid"
+}
+
+given Conversion[DomainError, Throwable] with
+  override def apply(x: DomainError): Throwable = x
+
+type ErrorOr[A] = Either[NonEmptyList[Throwable], A]
+
+type RegistrationBehavior = BehaviorF[ErrorOr, Commands, States]
+type RegistrationGuard    = GuardF[Commands, States, DomainError]
+
+val register: RegistrationBehavior = { case (c: Register, _: PotentialCustomer) =>
+  AwaitingRegistrationConfirmation(c.id, c.email, Token("token")).asRight
+}
+
+val confirmationGuard: RegistrationGuard = {
+  case (c: Confirm, s: AwaitingRegistrationConfirmation) =>
+    if c.token.value != s.token.value then InvalidToken(c.token).invalidNel else ().validNel
+}
+
+val confirmationTransition: RegistrationBehavior = {
+  case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
+    Active(s.userId, s.email).asRight
+}
+
+val confirmationAction: RegistrationBehavior = confirmationTransition << List(confirmationGuard)
+
 /*
 
 val register: Action = { case (c: Register, _: PotentialCustomer) =>
