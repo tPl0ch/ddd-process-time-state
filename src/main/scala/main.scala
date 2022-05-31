@@ -15,15 +15,17 @@ final case class UserId(id: UUID)     extends AnyVal
 final case class Email(value: String) extends AnyVal
 final case class Token(value: String) extends AnyVal
 
-enum Commands:
-  case Register(id: UserId, email: Email)
-  case Confirm(token: Token)
-  case ResendConfirmation()
-  case GDPRDeletion()
+sealed trait HasIdentity[ID] {
+  def id: ID
+}
 
-enum Events:
-  def id: UserId
+enum Commands extends HasIdentity[UserId]:
+  case Register(id: UserId, email: Email, token: Token)
+  case Confirm(id: UserId, token: Token)
+  case ResendConfirmation(id: UserId)
+  case GDPRDeletion(id: UserId)
 
+enum Events extends HasIdentity[UserId]:
   case Registered(id: UserId, email: Email)
   case NewConfirmationRequested(id: UserId, email: Email, token: Token)
   case GDPRDeleted(id: UserId)
@@ -31,12 +33,12 @@ enum Events:
 enum States:
   case PotentialCustomer()
   case AwaitingRegistrationConfirmation(
-      userId: UserId,
+      id: UserId,
       email: Email,
       token: Token,
   )
-  case Active(userId: UserId, email: Email)
-  case Deleted(userId: UserId)
+  case Active(id: UserId, email: Email)
+  case Deleted(id: UserId)
 
 sealed trait DomainError extends Throwable {
   def msg: String
@@ -53,10 +55,15 @@ given Conversion[DomainError, Throwable] with
 type ErrorOr[A] = Either[NonEmptyList[Throwable], A]
 
 type RegistrationBehavior = BehaviorF[ErrorOr, Commands, States]
-type RegistrationGuard    = GuardF[Commands, States, DomainError]
+type RegistrationGuard    = InvariantF[Commands, States, DomainError]
+type RegistrationEvent    = OutputF[ErrorOr, Commands, States, Events]
 
-val register: RegistrationBehavior = { case (c: Register, _: PotentialCustomer) =>
-  AwaitingRegistrationConfirmation(c.id, c.email, Token("token")).asRight
+val registerAction: RegistrationBehavior = { case (c: Register, _: PotentialCustomer) =>
+  AwaitingRegistrationConfirmation(c.id, c.email, c.token).asRight
+}
+
+val registerEvent: RegistrationEvent = { case (c: Register, _: PotentialCustomer) =>
+  NewConfirmationRequested(c.id, c.email, c.token).asRight
 }
 
 val confirmationGuard: RegistrationGuard = {
@@ -65,11 +72,22 @@ val confirmationGuard: RegistrationGuard = {
 }
 
 val confirmationTransition: RegistrationBehavior = {
-  case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
-    Active(s.userId, s.email).asRight
+  case (_: Confirm, s: AwaitingRegistrationConfirmation) => Active(s.id, s.email).asRight
 }
 
-val confirmationAction: RegistrationBehavior = confirmationTransition << List(confirmationGuard)
+val confirmationAction: RegistrationBehavior = confirmationTransition << confirmationGuard
+
+val confirmationEvent: RegistrationEvent = {
+  case (_: Confirm, s: AwaitingRegistrationConfirmation) => Registered(s.id, s.email).asRight
+}
+
+val machine = MachineF.apply[ErrorOr, Commands, States, Events](
+  registerAction orElse confirmationAction,
+  registerEvent orElse confirmationEvent,
+)
+
+val registerCommand = Register(UserId(UUID.randomUUID()), Email("test@example.org"), Token("token"))
+val nextState       = machine(registerCommand)(PotentialCustomer())
 
 /*
 
