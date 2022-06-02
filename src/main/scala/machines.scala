@@ -2,7 +2,7 @@ package org.tp.process_time_state
 
 import cats.data.Validated.*
 import cats.data.{ NonEmptyChain, NonEmptyList, Validated, ValidatedNel }
-import cats.{ Applicative, ApplicativeError, FlatMap, Functor, Id as CatsId }
+import cats.{ Applicative, ApplicativeError, FlatMap, Functor }
 import cats.implicits.*
 
 import scala.annotation.targetName
@@ -50,29 +50,21 @@ object BehaviorF {
   }
 }
 
-type StateF[F[_], S, E] = S => F[(S, E)]
+type StateF[F[_], C <: HasIdentity[ID], S <: HasIdentity[ID], E <: HasIdentity[ID], ID] =
+  Label[C, S, ID] => F[(S, E)]
 
 object StateF {
-  def apply[F[_], S, E](f: S => F[(S, E)]): StateF[F, S, E] = f
-
-  def unit[F[_]: Functor, S, E](fe: F[E]): StateF[F, S, E] =
-    s => Functor[F].map(fe)((s, _))
-
-  extension [F[_], S, E](underlying: StateF[F, S, E]) def run(s: S): F[(S, E)] = underlying(s)
-}
-
-type MachineF[F[_], C, S, E] = C => StateF[F, S, E]
-
-object MachineF {
-  def apply[F[_]: FlatMap, C <: HasIdentity[ID], S <: HasIdentity[ID], E, ID](
+  def apply[F[_]: FlatMap, C <: HasIdentity[ID], S <: HasIdentity[ID], E <: HasIdentity[ID], ID](
       behaviors: BehaviorF[F, C, S, ID],
       outputs: OutputF[F, C, S, E, ID],
-  ): MachineF[F, C, S, E] =
-    (command: C) =>
-      StateF((currentState: S) =>
-        for {
-          newState     <- behaviors((command, currentState))
-          outputSignal <- outputs((command, currentState))
-        } yield (newState, outputSignal),
-      )
+  ): StateF[F, C, S, E, ID] =
+    (currentCommand: C, currentState: S) =>
+      for {
+        newState     <- behaviors((currentCommand, currentState))
+        outputSignal <- outputs((currentCommand, currentState))
+      } yield (newState, outputSignal)
+
+  extension [F[_], C <: HasIdentity[ID], S <: HasIdentity[ID], E <: HasIdentity[ID], ID](
+      underlying: StateF[F, C, S, E, ID],
+  ) def run(l: Label[C, S, ID]): F[(S, E)] = underlying(l)
 }

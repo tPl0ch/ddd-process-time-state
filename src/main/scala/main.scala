@@ -8,6 +8,7 @@ import Commands.*
 import Events.*
 import States.*
 import BehaviorF.*
+import StateF.*
 
 import java.util.UUID
 
@@ -86,56 +87,10 @@ val confirmationEvent: RegistrationEvent = {
   case (_: Confirm, s: AwaitingRegistrationConfirmation) => Registered(s.id, s.email).asRight
 }
 
-val machine = MachineF.apply[ErrorOr, Commands, States, Events, UserId](
+val machine = StateF.apply[ErrorOr, Commands, States, Events, UserId](
   (registerAction orElse confirmationAction) << identityGuard,
   registerEvent orElse confirmationEvent,
 )
-
-@main
-def main(): Unit = {
-  val userId        = UserId(UUID.randomUUID())
-  val anotherUserId = UserId(UUID.randomUUID())
-  val email         = Email("test@example.org")
-  val token         = Token("token")
-
-  println(machine(Register(userId, email, token))(PotentialCustomer(NoIdentitySet)))
-}
-
-/*
-
-val register: Action = { case (c: Register, _: PotentialCustomer) =>
-  AwaitingRegistrationConfirmation(c.id, c.email, Token("token"))
-}
-
-val confirmation: Action = { case (c: Confirm, s: AwaitingRegistrationConfirmation) =>
-  if c.token != s.token then throw AssertionError("failed") else Active(s.userId, s.email)
-}
-
-val resend: Action = { case (_: ResendConfirmation, s: AwaitingRegistrationConfirmation) =>
-  AwaitingRegistrationConfirmation(s.userId, s.email, Token("token"))
-}
-
-val delete: Action = { case (_: GDPRDeletion, s: Active) =>
-  Deleted(s.userId)
-}
-
-val registeredEvent: Output = { case (_, s: AwaitingRegistrationConfirmation) =>
-  NewConfirmationRequested(s.userId, s.email, s.token)
-}
-
-val confirmedEvent: Output = { case (_, s: Active) =>
-  Registered(s.userId, s.email)
-}
-
-val behaviors: Action = register orElse confirmation orElse resend orElse delete
-
-val isFinal: IsFinal[States] = _ match
-  case _: Deleted => true
-  case _          => false
-
-val userRegistration = FSM.unit(behaviors, isFinal)
-val userRegistrationWithEvents =
-  userRegistration.toFST[Events](registeredEvent orElse confirmedEvent)
 
 @main
 def main(): Unit = {
@@ -143,13 +98,5 @@ def main(): Unit = {
   val email  = Email("test@example.org")
   val token  = Token("token")
 
-  val commands = List(
-    Register(userId, email),
-    Confirm(token),
-  )
-
-  import FSM.*
-
-  userRegistrationWithEvents.traverse(commands)(PotentialCustomer()).foreach(println)
+  println(machine.run((Register(userId, email, token), PotentialCustomer(NoIdentitySet))))
 }
- */
