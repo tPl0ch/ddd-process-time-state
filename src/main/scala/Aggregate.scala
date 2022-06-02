@@ -3,6 +3,7 @@ package process_time_state
 
 import cats.data.NonEmptyList
 
+// TODO: traverse for List[C]
 trait Aggregate[F[_]] extends Transitions[F] with Events[F] with States[F] {
 
   /** The type of the Aggregate's identity */

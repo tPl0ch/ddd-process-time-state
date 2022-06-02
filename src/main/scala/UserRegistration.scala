@@ -27,21 +27,21 @@ final class UserRegistration extends Aggregate[ErrorOr] {
   override type EE = DomainError
 
   override def transitions: TransitionF =
-    (registerAction orElse
-      (confirmationTransition << confirmationGuard)) << identityGuard
+    (registerTransition orElse
+      (confirmTransition << confirmGuard)) << identityGuard
 
   override def events: EventF =
-    registerEvent orElse confirmationEvent
+    registerEvent orElse confirmEvent
 
-  type RegistrationBehavior = UserRegistration#TransitionF
-  type RegistrationGuard    = UserRegistration#Invariant
-  type RegistrationEvent    = UserRegistration#EventF
+  type Transition = UserRegistration#TransitionF
+  type Guard      = UserRegistration#Invariant
+  type Event      = UserRegistration#EventF
 
-  val registerAction: RegistrationBehavior = { case (c: Register, _: PotentialCustomer) =>
+  val registerTransition: Transition = { case (c: Register, _: PotentialCustomer) =>
     AwaitingRegistrationConfirmation(c.id, c.email, c.token).asRight
   }
 
-  val registerEvent: RegistrationEvent = { case (c: Register, _: PotentialCustomer) =>
+  val registerEvent: Event = { case (c: Register, _: PotentialCustomer) =>
     NewConfirmationRequested(c.id, c.email, c.token).asRight
   }
 
@@ -49,19 +49,16 @@ final class UserRegistration extends Aggregate[ErrorOr] {
     override def msg: String = s"Token '${token.value}' is invalid"
   }
 
-  val confirmationGuard: RegistrationGuard = {
-    case (c: Confirm, s: AwaitingRegistrationConfirmation) =>
-      if c.token.value != s.token.value then InvalidToken(c.token).invalidNel else ().validNel
+  val confirmGuard: Guard = { case (c: Confirm, s: AwaitingRegistrationConfirmation) =>
+    if c.token.value != s.token.value then InvalidToken(c.token).invalidNel else ().validNel
   }
 
-  val confirmationTransition: RegistrationBehavior = {
-    case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
-      Active(s.id, s.email).asRight
+  val confirmTransition: Transition = { case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
+    Active(s.id, s.email).asRight
   }
 
-  val confirmationEvent: RegistrationEvent = {
-    case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
-      Registered(s.id, s.email).asRight
+  val confirmEvent: Event = { case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
+    Registered(s.id, s.email).asRight
   }
 }
 
