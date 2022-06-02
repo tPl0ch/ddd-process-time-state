@@ -1,5 +1,7 @@
-package org.tp.process_time_state
+package org.tp
+package process_time_state
 
+import cats.data.ValidatedNel
 import cats.syntax.validated.*
 
 /** This object defines the pre-genesis state, i.e. a potential customer.
@@ -40,8 +42,8 @@ trait EqualIdentities[ID] {
 final case class IdentitiesDoNotMatch[ID](
     thisId: ID | NoIdentitySet.type,
     otherId: ID | NoIdentitySet.type,
-) extends Throwable {
-  override def getMessage: String = s"Identities $thisId and $otherId do not match"
+) extends DomainError {
+  def msg: String = s"Identities $thisId and $otherId do not match"
 }
 
 /** This factory function lets you create an identity guard for a specific behavior.
@@ -59,7 +61,7 @@ final case class IdentitiesDoNotMatch[ID](
   */
 def identityGuard[C <: HasIdentity[ID], S <: HasIdentity[ID], ID](using
     equalIdentities: EqualIdentities[ID],
-): InvariantF[C, S, IdentitiesDoNotMatch[ID], ID] = { case (c: C, s: S) =>
+): PartialFunction[(C, S), ValidatedNel[DomainError, Unit]] = { case (c: C, s: S) =>
   if equalIdentities.equals(c.id, s.id) then ().validNel
   else IdentitiesDoNotMatch(c.id, s.id).invalidNel
 }
