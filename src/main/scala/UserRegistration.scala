@@ -67,6 +67,8 @@ final class UserRegistration extends Aggregate[ErrorOr] {
 
 object UserRegistration {
 
+  def apply(): UserRegistration = new UserRegistration
+
   sealed trait UserRegistrationError extends DomainError
 
   final case class UserId(id: UUID)     extends AnyVal
@@ -85,7 +87,7 @@ object UserRegistration {
     case GDPRDeleted(id: UserId)
 
   enum States extends HasIdentity[UserId]:
-    case PotentialCustomer(id: NoIdentitySet.type)
+    case PotentialCustomer(id: NoIdentitySet.type = NoIdentitySet)
     case AwaitingRegistrationConfirmation(
         id: UserId,
         email: Email,

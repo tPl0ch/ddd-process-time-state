@@ -10,4 +10,10 @@ def main(): Unit = {
   val userId = UserId(UUID.randomUUID())
   val email  = Email("test@example.org")
   val token  = Token("token")
+
+  val userRegistration = UserRegistration()
+
+  println(
+    userRegistration.state((Commands.Register(userId, email, token), States.PotentialCustomer())),
+  )
 }
