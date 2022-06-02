@@ -97,9 +97,6 @@ object UserRegistration {
     case Deleted(id: UserId)
 
   object givens {
-    given errorConversion: Conversion[DomainError, Throwable] with
-      override def apply(x: DomainError): Throwable = x
-
     given userIdEquals: EqualIdentities[UserRegistration#ID] with
       override def equals(
           idA: UserId | NoIdentitySet.type,
@@ -107,7 +104,7 @@ object UserRegistration {
       ): Boolean =
         (idA, idB) match
           case (a: UserId, b: UserId)     => a.id.equals(b.id)
-          case (_: NoIdentitySet.type, _) => true
+          case (_: NoIdentitySet.type, _) => false
           case (_, _: NoIdentitySet.type) => true
           case _                          => false
   }
