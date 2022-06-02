@@ -11,13 +11,26 @@ import BehaviorF.*
 
 import java.util.UUID
 
-final case class UserId(id: UUID)     extends AnyVal
+sealed trait DomainError extends Throwable {
+  def msg: String
+  final override def getMessage: String = this.msg
+}
+
+given Conversion[DomainError, Throwable] with
+  override def apply(x: DomainError): Throwable = x
+
+final case class UserId(id: UUID)
+
+given userIdEquals: EqualIdentities[UserId] with
+  override def equals(idA: UserId | NoIdentitySet.type, idB: UserId | NoIdentitySet.type): Boolean =
+    (idA, idB) match
+      case (a: UserId, b: UserId)     => a.id.equals(b.id)
+      case (_: NoIdentitySet.type, _) => true
+      case (_, _: NoIdentitySet.type) => true
+      case _                          => false
+
 final case class Email(value: String) extends AnyVal
 final case class Token(value: String) extends AnyVal
-
-sealed trait HasIdentity[ID] {
-  def id: ID
-}
 
 enum Commands extends HasIdentity[UserId]:
   case Register(id: UserId, email: Email, token: Token)
@@ -30,8 +43,8 @@ enum Events extends HasIdentity[UserId]:
   case NewConfirmationRequested(id: UserId, email: Email, token: Token)
   case GDPRDeleted(id: UserId)
 
-enum States:
-  case PotentialCustomer()
+enum States extends HasIdentity[UserId]:
+  case PotentialCustomer(id: NoIdentitySet.type)
   case AwaitingRegistrationConfirmation(
       id: UserId,
       email: Email,
@@ -40,23 +53,15 @@ enum States:
   case Active(id: UserId, email: Email)
   case Deleted(id: UserId)
 
-sealed trait DomainError extends Throwable {
-  def msg: String
-  final override def getMessage: String = this.msg
-}
-
 final case class InvalidToken(token: Token) extends DomainError {
   override def msg: String = s"Token '${token.value}' is invalid"
 }
 
-given Conversion[DomainError, Throwable] with
-  override def apply(x: DomainError): Throwable = x
-
 type ErrorOr[A] = Either[NonEmptyList[Throwable], A]
 
-type RegistrationBehavior = BehaviorF[ErrorOr, Commands, States]
-type RegistrationGuard    = InvariantF[Commands, States, DomainError]
-type RegistrationEvent    = OutputF[ErrorOr, Commands, States, Events]
+type RegistrationBehavior = BehaviorF[ErrorOr, Commands, States, UserId]
+type RegistrationGuard    = InvariantF[Commands, States, DomainError, UserId]
+type RegistrationEvent    = OutputF[ErrorOr, Commands, States, Events, UserId]
 
 val registerAction: RegistrationBehavior = { case (c: Register, _: PotentialCustomer) =>
   AwaitingRegistrationConfirmation(c.id, c.email, c.token).asRight
@@ -81,13 +86,20 @@ val confirmationEvent: RegistrationEvent = {
   case (_: Confirm, s: AwaitingRegistrationConfirmation) => Registered(s.id, s.email).asRight
 }
 
-val machine = MachineF.apply[ErrorOr, Commands, States, Events](
-  registerAction orElse confirmationAction,
+val machine = MachineF.apply[ErrorOr, Commands, States, Events, UserId](
+  (registerAction orElse confirmationAction) << identityGuard,
   registerEvent orElse confirmationEvent,
 )
 
-val registerCommand = Register(UserId(UUID.randomUUID()), Email("test@example.org"), Token("token"))
-val nextState       = machine(registerCommand)(PotentialCustomer())
+@main
+def main(): Unit = {
+  val userId        = UserId(UUID.randomUUID())
+  val anotherUserId = UserId(UUID.randomUUID())
+  val email         = Email("test@example.org")
+  val token         = Token("token")
+
+  println(machine(Register(userId, email, token))(PotentialCustomer(NoIdentitySet)))
+}
 
 /*
 
