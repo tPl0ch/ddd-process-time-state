@@ -22,7 +22,7 @@ trait Aggregate[F[_]] extends Transitions[F] with Events[F] with States[F] {
   type EE <: DomainError
 
   /** We are accumulating domain errors in a NonEmptyList */
-  type NEC = NonEmptyList[EE]
+  type NEL = NonEmptyList[EE]
 
   /** The (Command, State) input label */
   type LabelIn = (C, S)

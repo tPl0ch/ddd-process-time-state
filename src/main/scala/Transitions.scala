@@ -3,37 +3,53 @@ package process_time_state
 
 import cats.ApplicativeError
 import cats.data.Validated.{ Invalid, Valid }
-import cats.data.ValidatedNel
+import cats.data.{ Kleisli, NonEmptyList, ValidatedNel }
 import cats.implicits.*
 
 import scala.annotation.targetName
 
 trait Transitions[F[_]] { self: Aggregate[F] =>
   type Invariant   = PartialFunction[LabelIn, ValidatedNel[EE, Unit]]
-  type TransitionF = PartialFunction[LabelIn, F[S]]
+  type Transition  = PartialFunction[LabelIn, F[S]]
+  type TransitionF = Kleisli[F, LabelIn, S]
 
   def transitions: TransitionF
 
-  final private def mkTransition(
-      transitionToBeGuarded: TransitionF,
-      guards: List[Invariant] = Nil,
-  )(using
-      applicativeError: ApplicativeError[F, NEC],
-  ): TransitionF = {
-    case (command: C, state: S) => {
-      guards.map(f => f((command, state))).sequence match
-        case Valid(_)          => transitionToBeGuarded((command, state))
-        case Invalid(nel: NEC) => nel.raiseError[F, S]
-    }
+  final case class TransitionNotDefined(l: LabelIn) extends DomainError {
+    override def msg: String = s"Transition is not defined for command ${l._1} and state ${l._2}"
   }
 
-  extension (transition: TransitionF)
+  final private def mkTransition(
+      transitionToBeGuarded: Transition,
+      guards: List[Invariant] = Nil,
+  )(using
+      applicativeError: ApplicativeError[F, NEL],
+  ): Transition = (command: C, state: S) => {
+    guards
+      .filter(_.isDefinedAt((command, state)))
+      .map(f => f((command, state)))
+      .sequence match
+      case Valid(_)          => transitionToBeGuarded((command, state))
+      case Invalid(nel: NEL) => applicativeError.raiseError(nel)
+  }
+
+  final protected def mkTransitionF(
+      transitionsToBeLifted: Transition,
+  )(using
+      applicativeError: ApplicativeError[F, NEL],
+  ): TransitionF = Kleisli { (l: LabelIn) =>
+    if !transitionsToBeLifted.isDefinedAt(l) then
+      applicativeError.raiseError(NonEmptyList.of(TransitionNotDefined(l).asInstanceOf[EE]))
+    else transitionsToBeLifted(l)
+  }
+
+  extension (transition: Transition)
     @targetName("withGuards")
     def <<<(
         invariants: List[Invariant],
     )(using
-        applicativeError: ApplicativeError[F, NEC],
-    ): TransitionF = mkTransition(
+        applicativeError: ApplicativeError[F, NEL],
+    ): Transition = mkTransition(
       transition,
       invariants,
     )
@@ -42,8 +58,8 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
     def <<(
         invariant: Invariant,
     )(using
-        applicativeError: ApplicativeError[F, NEC],
-    ): TransitionF = mkTransition(
+        applicativeError: ApplicativeError[F, NEL],
+    ): Transition = mkTransition(
       transition,
       List(invariant),
     )

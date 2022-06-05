@@ -1,7 +1,7 @@
 package org.tp
 package process_time_state
 
-import cats.data.NonEmptyList
+import cats.data.{ Kleisli, NonEmptyList }
 import cats.syntax.either.*
 import cats.syntax.validated.*
 import cats.implicits.*
@@ -26,20 +26,16 @@ final class UserRegistration extends Aggregate[ErrorOr] {
   override type E  = Events
   override type EE = DomainError
 
-  override def transitions: TransitionF =
+  override def transitions: TransitionF = mkTransitionF(
     (registerTransition orElse
-      (confirmTransition << confirmGuard)) << identityGuard
+      (confirmTransition << confirmGuard)) << identityGuard,
+  )
 
-  override def events: EventF =
-    registerEvent orElse confirmEvent
+  override def events: EventF = mkEventsF(registerEvent orElse confirmEvent)
 
-  type Transition = UserRegistration#TransitionF
-  type Guard      = UserRegistration#Invariant
-  type Event      = UserRegistration#EventF
-
-  val registerTransition: Transition = { case (c: Register, _: PotentialCustomer) =>
-    AwaitingRegistrationConfirmation(c.id, c.email, c.token).asRight
-  }
+  val registerTransition: Transition =
+    case (c: Register, _: PotentialCustomer) =>
+      AwaitingRegistrationConfirmation(c.id, c.email, c.token).asRight
 
   val registerEvent: Event = { case (c: Register, _: PotentialCustomer) =>
     NewConfirmationRequested(c.id, c.email, c.token).asRight
@@ -49,13 +45,13 @@ final class UserRegistration extends Aggregate[ErrorOr] {
     override def msg: String = s"Token '${token.value}' is invalid"
   }
 
-  val confirmGuard: Guard = { case (c: Confirm, s: AwaitingRegistrationConfirmation) =>
+  val confirmGuard: Invariant = { case (c: Confirm, s: AwaitingRegistrationConfirmation) =>
     if c.token.value != s.token.value then InvalidToken(c.token).invalidNel else ().validNel
   }
 
-  val confirmTransition: Transition = { case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
-    Active(s.id, s.email).asRight
-  }
+  val confirmTransition: Transition =
+    case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
+      Active(s.id, s.email).asRight
 
   val confirmEvent: Event = { case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
     Registered(s.id, s.email).asRight
@@ -101,8 +97,8 @@ object UserRegistration {
       ): Boolean =
         (idA, idB) match
           case (a: UserId, b: UserId)     => a.id.equals(b.id)
-          case (_: NoIdentitySet.type, _) => false
-          case (_, _: NoIdentitySet.type) => true
+          case (_: NoIdentitySet.type, _) => false // Commands should always have an identity
+          case (_, _: NoIdentitySet.type) => true  // If there is a pre-genesis state, allow
           case _                          => false
   }
 }
