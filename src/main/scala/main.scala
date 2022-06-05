@@ -7,13 +7,20 @@ import java.util.UUID
 
 @main
 def main(): Unit = {
-  val userId = UserId(UUID.randomUUID())
-  val email  = Email("test@example.org")
-  val token  = Token("token")
+  val userId        = UserId(UUID.randomUUID())
+  val anotherUserId = UserId(UUID.randomUUID())
+  val email         = Email("test@example.org")
+  val token         = Token("token")
+  val anotherToken  = Token("another-token")
 
   val userRegistration = UserRegistration()
 
   println(
-    userRegistration.state((Commands.Register(userId, email, token), States.PotentialCustomer())),
+    userRegistration.state(
+      (
+        Commands.Register(userId, email, token),
+        States.PotentialCustomer(),
+      ),
+    ),
   )
 }

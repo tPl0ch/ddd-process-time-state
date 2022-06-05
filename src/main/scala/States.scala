@@ -7,7 +7,6 @@ import cats.implicits.*
 trait States[F[_]] { self: Aggregate[F] =>
   type StateF = LabelIn => LabelOutF
 
-  // TODO: Undefined transition/event handling
   final def state(using flatMap: FlatMap[F]): StateF =
     (currentCommand: C, currentState: S) =>
       for {
