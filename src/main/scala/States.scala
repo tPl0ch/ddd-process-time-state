@@ -4,7 +4,7 @@ import cats.FlatMap
 import cats.implicits.*
 
 trait States[F[_]] { self: Aggregate[F] =>
-  type StateF = LabelIn => LabelOutF
+  final type StateF = LabelIn => LabelOutF
 
   final def state(using flatMap: FlatMap[F]): StateF =
     (currentCommand: C, currentState: S) =>
@@ -13,5 +13,5 @@ trait States[F[_]] { self: Aggregate[F] =>
         outputSignal <- events((currentCommand, currentState))
       } yield (newState, outputSignal)
 
-  extension (underlying: StateF) def run(l: LabelIn): LabelOutF = underlying(l)
+  extension (underlying: StateF) final def run(l: LabelIn): LabelOutF = underlying(l)
 }

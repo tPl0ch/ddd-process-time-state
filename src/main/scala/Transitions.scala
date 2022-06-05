@@ -72,7 +72,7 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
     else maybeDefinedTransition(transitionsToBeLifted)((c, s))
   }
 
-  private def maybeDefinedTransition(
+  final private def maybeDefinedTransition(
       transition: Transition,
   )(using applicativeError: ApplicativeError[F, NEL]): Transition =
     (l: LabelIn) =>
@@ -80,7 +80,7 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
         applicativeError.raiseError(NonEmptyList.of(TransitionNotDefined(l).asInstanceOf[EE]))
       else transition(l)
 
-  private def maybeDefinedInvariant(invariant: Invariant): Invariant =
+  final private def maybeDefinedInvariant(invariant: Invariant): Invariant =
     (l: LabelIn) =>
       if !invariant.isDefinedAt(l) then InvariantCannotBeChecked(l).asInstanceOf[EE].invalidNel
       else invariant(l)
@@ -101,7 +101,7 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
   extension (transition: Transition)
     @targetName("withGuards")
     /** Guards a Transition with a List of Invariants */
-    def <<<(
+    final def <<<(
         invariants: List[Invariant],
     )(using
         applicativeError: ApplicativeError[F, NEL],
@@ -112,7 +112,7 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
 
     @targetName("withGuard")
     /** Guards a Transition with single Invariant */
-    def <<(
+    final def <<(
         invariant: Invariant,
     )(using
         applicativeError: ApplicativeError[F, NEL],

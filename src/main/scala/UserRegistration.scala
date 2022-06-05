@@ -1,32 +1,32 @@
 package org.tp.process_time_state
 
+import Lifecycle.*
+import UserRegistration.UserRegistrationError
+import identity.*
+
 import cats.data.{ Kleisli, NonEmptyList }
-import cats.syntax.either.*
-import cats.syntax.validated.*
 import cats.implicits.*
 import cats.instances.either.*
-import identity.*
-import Lifecycle.*
+import cats.syntax.either.*
+import cats.syntax.validated.*
 
 import java.util.UUID
 
-type ErrorOr[A] = Either[NonEmptyList[DomainError], A]
+type ErrorOr[A] = Either[NonEmptyList[UserRegistrationError], A]
 
 final class UserRegistration extends Aggregate[ErrorOr] {
   import UserRegistration.*
 
   import Commands.*
-  import States.*
   import Events.*
-
-  import givens.userIdEquals
-  import givens.isFinalState
+  import States.*
+  import givens.{ isFinalState, userIdEquals }
 
   override type ID = UserId
   override type C  = Commands
   override type S  = States
   override type E  = Events
-  override type EE = DomainError
+  override type EE = UserRegistrationError
 
   override def transitions: TransitionF = mkTransitionF(
     (registerTransition orElse

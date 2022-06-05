@@ -4,8 +4,8 @@ import cats.ApplicativeError
 import cats.data.{ Kleisli, NonEmptyList }
 
 trait Events[F[_]] { self: Aggregate[F] =>
-  type Event  = PartialFunction[LabelIn, F[E]]
-  type EventF = Kleisli[F, LabelIn, E]
+  final type Event  = PartialFunction[LabelIn, F[E]]
+  final type EventF = Kleisli[F, LabelIn, E]
 
   def events: EventF
 

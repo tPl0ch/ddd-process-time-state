@@ -1,7 +1,8 @@
 package org.tp.process_time_state
 
-import cats.data.NonEmptyList
 import identity.*
+
+import cats.data.NonEmptyList
 
 // TODO: traverse for List[C]
 trait Aggregate[F[_]] extends Identities[F] with Transitions[F] with Events[F] with States[F] {
