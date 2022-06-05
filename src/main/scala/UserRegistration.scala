@@ -6,6 +6,7 @@ import cats.syntax.validated.*
 import cats.implicits.*
 import cats.instances.either.*
 import identity.*
+import Lifecycle.*
 
 import java.util.UUID
 
@@ -19,6 +20,7 @@ final class UserRegistration extends Aggregate[ErrorOr] {
   import Events.*
 
   import givens.userIdEquals
+  import givens.isFinalState
 
   override type ID = UserId
   override type C  = Commands
@@ -90,6 +92,11 @@ object UserRegistration {
     case Deleted(id: UserId)
 
   object givens {
+    given isFinalState: IsOmega[States] with
+      override def apply(s: States): Boolean = s match
+        case _: States.Deleted => true
+        case _                 => false
+
     given userIdEquals: EqualIdentities[UserId] with
       override def equals(
           idA: UserId | PreGenesis.type,

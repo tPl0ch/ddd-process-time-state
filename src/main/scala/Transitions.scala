@@ -1,5 +1,7 @@
 package org.tp.process_time_state
 
+import Lifecycle.IsOmega
+
 import cats.ApplicativeError
 import cats.data.Validated.{ Invalid, Valid }
 import cats.data.{ Kleisli, NonEmptyList, ValidatedNel }
@@ -15,18 +17,21 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
   /** An Invariant is a partial function that either gives a valid Unit value, or an accumulating
     * error structure
     */
-  type Invariant = PartialFunction[LabelIn, ValidatedNel[EE, Unit]]
+  final type Invariant = PartialFunction[LabelIn, ValidatedNel[EE, Unit]]
 
   /** A Transition is a partial function (not all combinations of commands and states need to have a
     * transition defined) that maps an input label to a state.
     */
-  type Transition = PartialFunction[LabelIn, F[S]]
+  final type Transition = PartialFunction[LabelIn, F[S]]
 
   /** A TransitionF is just an alias to Kleisli[F, LabelIn, S]. Kleisli structures are
     * representations of functions C => F[S] - exactly what we need to model a function that maps a
     * Command to a State within the context of F.
     */
-  type TransitionF = Kleisli[F, LabelIn, S]
+  final type TransitionF = Kleisli[F, LabelIn, S]
+
+  /** This type is representing a final state within the Aggregate's context */
+  final type IsFinal = IsOmega[S]
 
   /** This abstract method needs to provide all the state transitions supported by the Aggregate.
     * You can use the `mkTransitionF` helper method to easily lift the composed partial functions
@@ -49,12 +54,23 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
       s"An Invariant could not be checked for command ${l._1} and state ${l._2}"
   }
 
+  /** This error indicates when the Aggregate is in a final state and can't process any more
+    * commands
+    */
+  private final case class LifecycleHasEnded(l: LabelIn) extends DomainError {
+    override def msg: String = s"Command ${l._1} cannot be processed because state ${l._2} is final"
+  }
+
   /** Lifts a Transition into TransitionF */
   final protected def mkTransitionF(
       transitionsToBeLifted: Transition,
   )(using
       applicativeError: ApplicativeError[F, NEL],
-  ): TransitionF = Kleisli { (l: LabelIn) => maybeDefinedTransition(transitionsToBeLifted)(l) }
+      isFinal: IsFinal,
+  ): TransitionF = Kleisli { (c: C, s: S) =>
+    if isFinal(s) then NonEmptyList.of(LifecycleHasEnded((c, s)).asInstanceOf[EE]).raiseError[F, S]
+    else maybeDefinedTransition(transitionsToBeLifted)((c, s))
+  }
 
   private def maybeDefinedTransition(
       transition: Transition,

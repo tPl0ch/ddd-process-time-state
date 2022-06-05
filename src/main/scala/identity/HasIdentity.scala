@@ -1,6 +1,8 @@
 package org.tp.process_time_state
 package identity
 
+import Lifecycle.PreGenesis
+
 /** This trait needs to be implemented by the Command, State and Even alphabets and provides the
   * Aggregate identity. This identity can be defined from the the outside and needs to be
   * accompanied by an EqualIdentities[ID] given instance if you want to leverage the identity guard.
