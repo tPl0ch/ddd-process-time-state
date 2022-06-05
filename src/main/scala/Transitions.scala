@@ -1,5 +1,4 @@
-package org.tp
-package process_time_state
+package org.tp.process_time_state
 
 import cats.ApplicativeError
 import cats.data.Validated.{ Invalid, Valid }
@@ -72,11 +71,11 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
 
   final private def mkTransition(
       transitionToBeGuarded: Transition,
-      guards: List[Invariant] = Nil,
+      invariants: List[Invariant] = Nil,
   )(using
       applicativeError: ApplicativeError[F, NEL],
   ): Transition = (command: C, state: S) => {
-    guards
+    invariants
       .map(f => maybeDefinedInvariant(f)((command, state)))
       .sequence match
       case Valid(_)          => maybeDefinedTransition(transitionToBeGuarded)((command, state))

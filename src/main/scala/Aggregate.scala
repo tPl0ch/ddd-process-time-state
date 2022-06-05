@@ -1,13 +1,10 @@
-package org.tp
-package process_time_state
+package org.tp.process_time_state
 
 import cats.data.NonEmptyList
+import identity.*
 
 // TODO: traverse for List[C]
-trait Aggregate[F[_]] extends Transitions[F] with Events[F] with States[F] {
-
-  /** The type of the Aggregate's identity */
-  type ID
+trait Aggregate[F[_]] extends Identities[F] with Transitions[F] with Events[F] with States[F] {
 
   /** The Command alphabet type as a subtype of HasIdentity[ID] */
   type C <: HasIdentity[ID]

@@ -1,5 +1,4 @@
-package org.tp
-package process_time_state
+package org.tp.process_time_state
 
 import cats.FlatMap
 import cats.implicits.*

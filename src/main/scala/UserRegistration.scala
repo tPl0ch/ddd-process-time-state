@@ -1,11 +1,11 @@
-package org.tp
-package process_time_state
+package org.tp.process_time_state
 
 import cats.data.{ Kleisli, NonEmptyList }
 import cats.syntax.either.*
 import cats.syntax.validated.*
 import cats.implicits.*
 import cats.instances.either.*
+import identity.*
 
 import java.util.UUID
 
@@ -28,7 +28,7 @@ final class UserRegistration extends Aggregate[ErrorOr] {
 
   override def transitions: TransitionF = mkTransitionF(
     (registerTransition orElse
-      (confirmTransition << confirmGuard)) << identityGuard,
+      (confirmTransition << confirmGuard)) << identityInvariant,
   )
 
   override def events: EventF = mkEventsF(registerEvent orElse confirmEvent)
@@ -80,7 +80,7 @@ object UserRegistration {
     case GDPRDeleted(id: UserId)
 
   enum States extends HasIdentity[UserId]:
-    case PotentialCustomer(id: NoIdentitySet.type = NoIdentitySet)
+    case PotentialCustomer(id: PreGenesis.type = PreGenesis)
     case AwaitingRegistrationConfirmation(
         id: UserId,
         email: Email,
@@ -90,15 +90,15 @@ object UserRegistration {
     case Deleted(id: UserId)
 
   object givens {
-    given userIdEquals: EqualIdentities[UserRegistration#ID] with
+    given userIdEquals: EqualIdentities[UserId] with
       override def equals(
-          idA: UserId | NoIdentitySet.type,
-          idB: UserId | NoIdentitySet.type,
+          idA: UserId | PreGenesis.type,
+          idB: UserId | PreGenesis.type,
       ): Boolean =
         (idA, idB) match
-          case (a: UserId, b: UserId)     => a.id.equals(b.id)
-          case (_: NoIdentitySet.type, _) => false // Commands should always have an identity
-          case (_, _: NoIdentitySet.type) => true  // If there is a pre-genesis state, allow
-          case _                          => false
+          case (a: UserId, b: UserId)  => a.id.equals(b.id)
+          case (_: PreGenesis.type, _) => false // Commands should always have an identity
+          case (_, _: PreGenesis.type) => true  // If there is a pre-genesis state, allow
+          case _                       => false
   }
 }
