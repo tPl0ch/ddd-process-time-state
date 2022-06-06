@@ -2,9 +2,15 @@ package org.tp.process_time_state
 
 import identity.*
 
+import cats.ApplicativeError
 import cats.data.NonEmptyList
 
-trait Aggregate[F[_]] extends Identities[F] with Transitions[F] with Events[F] with States[F] {
+trait Aggregate[F[_]]
+    extends Lifecycles[F]
+    with Identities[F]
+    with Transitions[F]
+    with Events[F]
+    with States[F] {
 
   /** The Command alphabet type as a subtype of HasIdentity[ID] */
   type C <: HasIdentity[ID]
@@ -29,4 +35,14 @@ trait Aggregate[F[_]] extends Identities[F] with Transitions[F] with Events[F] w
 
   /** The (State, Event) output label lifted into Effect F */
   final type LabelOutF = F[LabelOut]
+}
+
+object Aggregate {
+  def maybe[F[_], IN, OUT, EE <: DomainError](
+      partialFunction: PartialFunction[IN, F[OUT]],
+      e: IN => EE,
+  )(using ae: ApplicativeError[F, NonEmptyList[EE]]): PartialFunction[IN, F[OUT]] =
+    (in: IN) =>
+      if !partialFunction.isDefinedAt(in) then ae.raiseError(NonEmptyList.of(e(in)))
+      else partialFunction(in)
 }

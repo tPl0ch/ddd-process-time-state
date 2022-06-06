@@ -22,13 +22,13 @@ def main(): Unit = {
   val commandsWrongToken: List[Commands] =
     List(Commands.Register(userId, email, token), Commands.Confirm(userId, anotherToken))
 
-  println(
+  val commandsNoTransition: List[Commands] =
+    List(Commands.Register(userId, email, token), Commands.GDPRDeletion(userId))
+
+  List(
     userRegistration.traverse(commands)(States.PotentialCustomer()),
-  )
-  println(
     userRegistration.traverse(commandsWrongIdentity)(States.PotentialCustomer()),
-  )
-  println(
     userRegistration.traverse(commandsWrongToken)(States.PotentialCustomer()),
-  )
+    userRegistration.traverse(commandsNoTransition)(States.PotentialCustomer()),
+  ).foreach(println)
 }

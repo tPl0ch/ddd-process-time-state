@@ -1,6 +1,6 @@
 package org.tp.process_time_state
 
-import Lifecycle.IsOmega
+import Lifecycle.IsEnd
 
 import cats.ApplicativeError
 import cats.data.Validated.{ Invalid, Valid }
@@ -30,9 +30,6 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
     */
   final type TransitionF = Kleisli[F, LabelIn, S]
 
-  /** This type is representing a final state within the Aggregate's context */
-  final type IsFinal = IsOmega[S]
-
   /** This abstract method needs to provide all the state transitions supported by the Aggregate.
     * You can use the `mkTransitionF` helper method to easily lift the composed partial functions
     * into the Kleisli data structure.
@@ -61,54 +58,32 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
     override def msg: String = s"Command ${l._1} cannot be processed because state ${l._2} is final"
   }
 
-  /** Lifts a Transition into TransitionF */
-  final protected def mkTransitionF(
-      transitionsToBeLifted: Transition,
-  )(using
-      applicativeError: ApplicativeError[F, NEL],
-      isFinal: IsFinal,
-  ): TransitionF = Kleisli { (c: C, s: S) =>
-    if isFinal(s) then NonEmptyList.of(LifecycleHasEnded((c, s)).asInstanceOf[EE]).raiseError[F, S]
-    else maybeDefinedTransition(transitionsToBeLifted)((c, s))
-  }
-
-  final private def maybeDefinedTransition(
-      transition: Transition,
-  )(using applicativeError: ApplicativeError[F, NEL]): Transition =
-    (l: LabelIn) =>
-      if !transition.isDefinedAt(l) then
-        applicativeError.raiseError(NonEmptyList.of(TransitionNotDefined(l).asInstanceOf[EE]))
-      else transition(l)
-
-  final private def maybeDefinedInvariant(invariant: Invariant): Invariant =
-    (l: LabelIn) =>
-      if !invariant.isDefinedAt(l) then InvariantCannotBeChecked(l).asInstanceOf[EE].invalidNel
-      else invariant(l)
-
-  final private def mkTransition(
-      transitionToBeGuarded: Transition,
-      invariants: List[Invariant] = Nil,
-  )(using
-      applicativeError: ApplicativeError[F, NEL],
-  ): Transition = (command: C, state: S) => {
-    invariants
-      .map(f => maybeDefinedInvariant(f)((command, state)))
-      .sequence match
-      case Valid(_)          => maybeDefinedTransition(transitionToBeGuarded)((command, state))
-      case Invalid(nel: NEL) => applicativeError.raiseError(nel)
-  }
+  extension (invariant: Invariant)
+    @targetName("maybeInvariant")
+    final def maybe: Invariant =
+      (l: LabelIn) =>
+        if !invariant.isDefinedAt(l) then ().validNel
+        else invariant(l)
 
   extension (transition: Transition)
+
+    final def guard(invariants: List[Invariant] = Nil)(using
+        applicativeError: ApplicativeError[F, NEL],
+    ): Transition = (command: C, state: S) => {
+      invariants
+        .map(f => f.maybe((command, state)))
+        .sequence match
+        case Valid(_)          => maybe((command, state))
+        case Invalid(nel: NEL) => applicativeError.raiseError(nel)
+    }
+
     @targetName("withGuards")
     /** Guards a Transition with a List of Invariants */
     final def <<<(
         invariants: List[Invariant],
     )(using
         applicativeError: ApplicativeError[F, NEL],
-    ): Transition = mkTransition(
-      transition,
-      invariants,
-    )
+    ): Transition = guard(invariants)
 
     @targetName("withGuard")
     /** Guards a Transition with single Invariant */
@@ -116,8 +91,19 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
         invariant: Invariant,
     )(using
         applicativeError: ApplicativeError[F, NEL],
-    ): Transition = mkTransition(
-      transition,
-      List(invariant),
-    )
+    ): Transition = guard(List(invariant))
+
+    @targetName("maybeTransition")
+    final def maybe(using applicativeError: ApplicativeError[F, NEL]): Transition =
+      Aggregate.maybe(transition, l => TransitionNotDefined(l).asInstanceOf[EE])
+
+    @targetName("liftTransition")
+    final def liftK(using
+        applicativeError: ApplicativeError[F, NEL],
+        isFinal: IsEnd[S],
+    ): TransitionF = Kleisli { (c: C, s: S) =>
+      if isFinal(s) then
+        NonEmptyList.of(LifecycleHasEnded((c, s)).asInstanceOf[EE]).raiseError[F, S]
+      else maybe((c, s))
+    }
 }

@@ -7,9 +7,7 @@ import cats.data.Kleisli
 import cats.implicits.*
 
 trait States[F[_]] { self: Aggregate[F] =>
-  final type State = StateF[F, S, E]
-
-  final def state(using flatMap: FlatMap[F]): C => State =
+  final def state(using flatMap: FlatMap[F]): C => StateF[F, S, E] =
     (currentCommand: C) =>
       (currentState: S) =>
         for {

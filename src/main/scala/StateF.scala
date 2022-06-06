@@ -27,14 +27,12 @@ object StateF {
 
   def get[F[_], S](using F: Applicative[F]): StateF[F, S, S] = s => F.pure((s, s))
 
-  def set[F[_], S](s: S)(using F: Applicative[F]): StateF[F, S, Unit] = _ => F.pure((s, ()))
-
-  def setF[F[_], S](fs: F[S])(using F: Functor[F]): StateF[F, S, Unit] = _ => F.map(fs)((_, ()))
+  def set[F[_], S](fs: F[S])(using F: Functor[F]): StateF[F, S, Unit] = _ => F.map(fs)((_, ()))
 
   def modify[F[_], S](f: S => F[S])(using F: Monad[F]): StateF[F, S, Unit] =
     for
-      s <- get        // Gets the current state and assigns it to `s`.
-      _ <- setF(f(s)) // Sets the new state to `f` applied to `s`.
+      s <- get       // Gets the current state and assigns it to `s`.
+      _ <- set(f(s)) // Sets the new state to `f` applied to `s`.
     yield ()
 
   def traverse[F[_], S, A, B](as: List[A])(f: A => StateF[F, S, B])(using

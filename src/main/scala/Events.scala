@@ -3,23 +3,42 @@ package org.tp.process_time_state
 import cats.ApplicativeError
 import cats.data.{ Kleisli, NonEmptyList }
 
+import scala.annotation.targetName
+
+/** This trait provides the Event output types and functions */
 trait Events[F[_]] { self: Aggregate[F] =>
-  final type Event  = PartialFunction[LabelIn, F[E]]
-  final type EventF = Kleisli[F, LabelIn, E]
 
-  def events: EventF
+  /** Events are modelled as a partial function of a LabelIn to an Event */
+  final type Outputs = PartialFunction[LabelIn, F[E]]
 
-  final case class EventNotDefined(l: LabelIn) extends DomainError {
+  /** We again lift the partial functions into a Kleisli representing an fn LabelIn => F[E] */
+  final type OutputsF = Kleisli[F, LabelIn, E]
+
+  /** Provides the output Events for the Aggregate
+    *
+    * @return
+    *   The lifted partial output function that provides the Aggregate's Events within the context F
+    */
+  def events: OutputsF
+
+  /** This error indicates when there is no Event defined for a valid Transition */
+  final case class OutputNotDefined(l: LabelIn) extends DomainError {
     override def msg: String = s"Event for input label $l is not defined."
   }
 
-  final protected def mkEventsF(
-      eventsToBeLifted: Event,
-  )(using
-      applicativeError: ApplicativeError[F, NEL],
-  ): EventF = Kleisli { (l: LabelIn) =>
-    if !eventsToBeLifted.isDefinedAt(l) then
-      applicativeError.raiseError(NonEmptyList.of(EventNotDefined(l).asInstanceOf[EE]))
-    else eventsToBeLifted(l)
-  }
+  extension (outputs: Outputs)
+    @targetName("maybeOutputs")
+    /** Makes calling the partial output function safe by either raising an applicative error if it
+      * is not defined for a (command, state) label or running the function
+      */
+    final def maybe(using
+        applicativeError: ApplicativeError[F, NEL],
+    ): Outputs =
+      Aggregate.maybe(outputs, l => OutputNotDefined(l).asInstanceOf[EE])
+
+    @targetName("liftOutputs")
+    /** Lifts an Events output function into a Kleisli */
+    final def liftK(using
+        applicativeError: ApplicativeError[F, NEL],
+    ): OutputsF = Kleisli { maybe(_) }
 }

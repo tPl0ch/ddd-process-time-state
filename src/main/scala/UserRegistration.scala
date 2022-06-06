@@ -28,18 +28,16 @@ final class UserRegistration extends Aggregate[ErrorOr] {
   override type E  = Events
   override type EE = UserRegistrationError
 
-  override def transitions: TransitionF = mkTransitionF(
-    (registerTransition orElse
-      (confirmTransition << confirmGuard)) << identityInvariant,
-  )
+  override def transitions: TransitionF = ((registerTransition orElse
+    (confirmTransition << confirmGuard)) << identityInvariant).liftK
 
-  override def events: EventF = mkEventsF(registerEvent orElse confirmEvent)
+  override def events: OutputsF = (registerEvent orElse confirmEvent).liftK
 
   val registerTransition: Transition =
     case (c: Register, _: PotentialCustomer) =>
       AwaitingRegistrationConfirmation(c.id, c.email, c.token).asRight
 
-  val registerEvent: Event = { case (c: Register, _: PotentialCustomer) =>
+  val registerEvent: Outputs = { case (c: Register, _: PotentialCustomer) =>
     NewConfirmationRequested(c.id, c.email, c.token).asRight
   }
 
@@ -55,7 +53,7 @@ final class UserRegistration extends Aggregate[ErrorOr] {
     case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
       Active(s.id, s.email).asRight
 
-  val confirmEvent: Event = { case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
+  val confirmEvent: Outputs = { case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
     Registered(s.id, s.email).asRight
   }
 }
@@ -77,8 +75,8 @@ object UserRegistration {
     case GDPRDeletion(id: UserId)
 
   enum Events extends HasIdentity[UserId]:
-    case Registered(id: UserId, email: Email)
     case NewConfirmationRequested(id: UserId, email: Email, token: Token)
+    case Registered(id: UserId, email: Email)
     case GDPRDeleted(id: UserId)
 
   enum States extends HasIdentity[UserId]:
@@ -92,7 +90,7 @@ object UserRegistration {
     case Deleted(id: UserId)
 
   object givens {
-    given isFinalState: IsOmega[States] with
+    given isFinalState: IsEnd[States] with
       override def apply(s: States): Boolean = s match
         case _: States.Deleted => true
         case _                 => false
