@@ -1,10 +1,14 @@
 package org.tp.process_time_state
 
 import Lifecycle.*
-import UserRegistration.UserRegistrationError
+import UserRegistration.Commands.*
+import UserRegistration.States.*
+import UserRegistration.*
+import UserRegistration.givens.given
 import identity.*
+import impl.{ SimpleUserRegistration, UserRegistrationWithEvents }
 
-import cats.data.{ Kleisli, NonEmptyList }
+import cats.data.{ Kleisli, NonEmptyChain }
 import cats.implicits.*
 import cats.instances.either.*
 import cats.syntax.either.*
@@ -12,76 +16,56 @@ import cats.syntax.validated.*
 
 import java.util.UUID
 
-type ErrorOr[A] = Either[NonEmptyList[UserRegistrationError], A]
+type ErrorOr[A] = Either[NonEmptyChain[UserRegistrationError], A]
 
-final class UserRegistration extends Aggregate[ErrorOr] {
-  import UserRegistration.*
+abstract class UserRegistration extends Aggregate[ErrorOr] {
 
-  import Commands.*
-  import Events.*
-  import States.*
-  import givens.{ isFinalState, userIdEquals }
+  final override type ID = UserId
+  final override type C  = Commands
+  final override type S  = States
+  final override type EE = UserRegistrationError
 
-  override type ID = UserId
-  override type C  = Commands
-  override type S  = States
-  override type E  = Events
-  override type EE = UserRegistrationError
+  override def transitions: TransitionF = ((startRegistration orElse
+    (emailConfirmation << tokensMustMatch)) << identitiesMustMatch).liftK
 
-  override def transitions: TransitionF = ((registerTransition orElse
-    (confirmTransition << confirmGuard)) << identityInvariant).liftK
+  val startRegistration: Transition =
+    case (c: StartRegistration, _: PotentialCustomer) =>
+      WaitingForEmailRegistration(c.id, c.email, c.token).asRight
 
-  override def events: OutputsF = (registerEvent orElse confirmEvent).liftK
-
-  val registerTransition: Transition =
-    case (c: Register, _: PotentialCustomer) =>
-      AwaitingRegistrationConfirmation(c.id, c.email, c.token).asRight
-
-  val registerEvent: Outputs = { case (c: Register, _: PotentialCustomer) =>
-    NewConfirmationRequested(c.id, c.email, c.token).asRight
+  val tokensMustMatch: Invariant = { case (c: ConfirmEmail, s: WaitingForEmailRegistration) =>
+    if c.token.value != s.token.value then InvalidToken(c.token).invalidNec else ().validNec
   }
 
-  final case class InvalidToken(token: Token) extends UserRegistrationError {
-    override def msg: String = s"Token '${token.value}' is invalid"
-  }
-
-  val confirmGuard: Invariant = { case (c: Confirm, s: AwaitingRegistrationConfirmation) =>
-    if c.token.value != s.token.value then InvalidToken(c.token).invalidNel else ().validNel
-  }
-
-  val confirmTransition: Transition =
-    case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
+  val emailConfirmation: Transition =
+    case (_: ConfirmEmail, s: WaitingForEmailRegistration) =>
       Active(s.id, s.email).asRight
-
-  val confirmEvent: Outputs = { case (_: Confirm, s: AwaitingRegistrationConfirmation) =>
-    Registered(s.id, s.email).asRight
-  }
 }
 
 object UserRegistration {
 
-  def apply(): UserRegistration = new UserRegistration
+  def simple(): SimpleUserRegistration = new SimpleUserRegistration
+
+  def withEvents(): UserRegistrationWithEvents = new UserRegistrationWithEvents
 
   sealed trait UserRegistrationError extends DomainError
+
+  final case class InvalidToken(token: Token) extends UserRegistrationError {
+    override def msg: String = s"Token '${token.value}' is invalid"
+  }
 
   final case class UserId(id: UUID)     extends AnyVal
   final case class Email(value: String) extends AnyVal
   final case class Token(value: String) extends AnyVal
 
   enum Commands extends HasIdentity[UserId]:
-    case Register(id: UserId, email: Email, token: Token)
-    case Confirm(id: UserId, token: Token)
-    case ResendConfirmation(id: UserId)
-    case GDPRDeletion(id: UserId)
-
-  enum Events extends HasIdentity[UserId]:
-    case NewConfirmationRequested(id: UserId, email: Email, token: Token)
-    case Registered(id: UserId, email: Email)
-    case GDPRDeleted(id: UserId)
+    case StartRegistration(id: UserId, email: Email, token: Token)
+    case ConfirmEmail(id: UserId, token: Token)
+    case RestartRegistration(id: UserId)
+    case DeleteDueToGDPR(id: UserId)
 
   enum States extends HasIdentity[UserId]:
     case PotentialCustomer(id: PreGenesis.type = PreGenesis)
-    case AwaitingRegistrationConfirmation(
+    case WaitingForEmailRegistration(
         id: UserId,
         email: Email,
         token: Token,
@@ -96,10 +80,7 @@ object UserRegistration {
         case _                 => false
 
     given userIdEquals: EqualIdentities[UserId] with
-      override def equals(
-          idA: UserId | PreGenesis.type,
-          idB: UserId | PreGenesis.type,
-      ): Boolean =
+      override def equals(idA: UserId | PreGenesis.type, idB: UserId | PreGenesis.type): Boolean =
         (idA, idB) match
           case (a: UserId, b: UserId)  => a.id.equals(b.id)
           case (_: PreGenesis.type, _) => false // Commands should always have an identity

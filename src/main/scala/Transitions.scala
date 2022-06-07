@@ -1,10 +1,11 @@
 package org.tp.process_time_state
 
 import Lifecycle.IsEnd
+import StateF.*
 
-import cats.ApplicativeError
+import cats.{ ApplicativeError, FlatMap, Monad }
+import cats.data.*
 import cats.data.Validated.{ Invalid, Valid }
-import cats.data.{ Kleisli, NonEmptyList, ValidatedNel }
 import cats.implicits.*
 
 import scala.annotation.targetName
@@ -14,10 +15,19 @@ import scala.annotation.targetName
   */
 trait Transitions[F[_]] { self: Aggregate[F] =>
 
+  /** The (Command, State) input label */
+  final type LabelIn = (C, S)
+
+  /** We are accumulating domain errors in a NonEmptyList */
+  final type NEC = NonEmptyChain[EE]
+
+  /** We use the accumulating Validated structure */
+  final type InvariantError = Validated[NEC, Unit]
+
   /** An Invariant is a partial function that either gives a valid Unit value, or an accumulating
-    * error structure
+    * error structure.
     */
-  final type Invariant = PartialFunction[LabelIn, ValidatedNel[EE, Unit]]
+  final type Invariant = PartialFunction[LabelIn, InvariantError]
 
   /** A Transition is a partial function (not all combinations of commands and states need to have a
     * transition defined) that maps an input label to a state.
@@ -38,6 +48,18 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
     *   mkTransitionF
     */
   def transitions: TransitionF
+
+  def state(using F: FlatMap[F]): C => StateF[F, S, Unit] =
+    (currentCommand: C) =>
+      (currentState: S) =>
+        for {
+          newState <- transitions((currentCommand, currentState))
+        } yield (newState, ())
+
+  def traverse(commands: List[C])(using F: Monad[F]): StateF[F, S, Unit] =
+    for {
+      _ <- StateF.traverse(commands)(state(_))
+    } yield ()
 
   /** This error is indicated when there is no TransitionF for a LabelIn.
     */
@@ -62,48 +84,52 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
     @targetName("maybeInvariant")
     final def maybe: Invariant =
       (l: LabelIn) =>
-        if !invariant.isDefinedAt(l) then ().validNel
+        if !invariant.isDefinedAt(l) then ().validNec
         else invariant(l)
 
   extension (transition: Transition)
 
-    final def guard(invariants: List[Invariant] = Nil)(using
-        applicativeError: ApplicativeError[F, NEL],
-    ): Transition = (command: C, state: S) => {
+    final def guard(
+        invariants: List[Invariant] = Nil,
+    )(using F: ApplicativeError[F, NEC]): Transition = (command: C, state: S) => {
       invariants
         .map(f => f.maybe((command, state)))
         .sequence match
-        case Valid(_)          => maybe((command, state))
-        case Invalid(nel: NEL) => applicativeError.raiseError(nel)
+        case Valid(_)                        => maybe((command, state))
+        case Invalid(nec: NonEmptyChain[EE]) => F.raiseError(nec)
     }
 
     @targetName("withGuards")
     /** Guards a Transition with a List of Invariants */
-    final def <<<(
-        invariants: List[Invariant],
-    )(using
-        applicativeError: ApplicativeError[F, NEL],
-    ): Transition = guard(invariants)
+    final def <<<(invariants: List[Invariant])(using F: ApplicativeError[F, NEC]): Transition =
+      guard(invariants)
 
     @targetName("withGuard")
     /** Guards a Transition with single Invariant */
-    final def <<(
-        invariant: Invariant,
-    )(using
-        applicativeError: ApplicativeError[F, NEL],
-    ): Transition = guard(List(invariant))
+    final def <<(invariant: Invariant)(using F: ApplicativeError[F, NEC]): Transition =
+      guard(List(invariant))
 
     @targetName("maybeTransition")
-    final def maybe(using applicativeError: ApplicativeError[F, NEL]): Transition =
-      Aggregate.maybe(transition, l => TransitionNotDefined(l).asInstanceOf[EE])
+    final def maybe(using F: ApplicativeError[F, NEC]): Transition =
+      Transitions.maybe(transition, l => TransitionNotDefined(l).asInstanceOf[EE])
 
     @targetName("liftTransition")
     final def liftK(using
-        applicativeError: ApplicativeError[F, NEL],
+        F: ApplicativeError[F, NEC],
         isFinal: IsEnd[S],
     ): TransitionF = Kleisli { (c: C, s: S) =>
       if isFinal(s) then
-        NonEmptyList.of(LifecycleHasEnded((c, s)).asInstanceOf[EE]).raiseError[F, S]
+        NonEmptyChain.one(LifecycleHasEnded((c, s)).asInstanceOf[EE]).raiseError[F, S]
       else maybe((c, s))
     }
+}
+
+object Transitions {
+  def maybe[F[_], IN, OUT, EE <: DomainError](
+      partialFunction: PartialFunction[IN, F[OUT]],
+      e: IN => EE,
+  )(using F: ApplicativeError[F, NonEmptyChain[EE]]): PartialFunction[IN, F[OUT]] =
+    (in: IN) =>
+      if !partialFunction.isDefinedAt(in) then F.raiseError(NonEmptyChain.one(e(in)))
+      else partialFunction(in)
 }

@@ -1,12 +1,18 @@
 package org.tp.process_time_state
 
-import cats.ApplicativeError
-import cats.data.{ Kleisli, NonEmptyList }
+import identity.HasIdentity
+
+import cats.{ ApplicativeError, FlatMap, Monad }
+import cats.data.Kleisli
+import cats.implicits.*
 
 import scala.annotation.targetName
 
 /** This trait provides the Event output types and functions */
 trait Events[F[_]] { self: Aggregate[F] =>
+
+  /** The Event alphabet type as a subtype of HasIdentity[ID] */
+  type E <: HasIdentity[ID]
 
   /** Events are modelled as a partial function of a LabelIn to an Event */
   final type Outputs = PartialFunction[LabelIn, F[E]]
@@ -31,14 +37,10 @@ trait Events[F[_]] { self: Aggregate[F] =>
     /** Makes calling the partial output function safe by either raising an applicative error if it
       * is not defined for a (command, state) label or running the function
       */
-    final def maybe(using
-        applicativeError: ApplicativeError[F, NEL],
-    ): Outputs =
-      Aggregate.maybe(outputs, l => OutputNotDefined(l).asInstanceOf[EE])
+    final def maybe(using F: ApplicativeError[F, NEC]): Outputs =
+      Transitions.maybe(outputs, l => OutputNotDefined(l).asInstanceOf[EE])
 
     @targetName("liftOutputs")
     /** Lifts an Events output function into a Kleisli */
-    final def liftK(using
-        applicativeError: ApplicativeError[F, NEL],
-    ): OutputsF = Kleisli { maybe(_) }
+    final def liftK(using F: ApplicativeError[F, NEC]): OutputsF = Kleisli { maybe(_) }
 }

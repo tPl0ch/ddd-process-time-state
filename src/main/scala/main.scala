@@ -12,23 +12,33 @@ def main(): Unit = {
   val token         = Token("token")
   val anotherToken  = Token("another-token")
 
-  val userRegistration = UserRegistration()
+  val aggregateImplementations = List(UserRegistration.simple(), UserRegistration.withEvents())
+
   val commands: List[Commands] =
-    List(Commands.Register(userId, email, token), Commands.Confirm(userId, token))
+    List(Commands.StartRegistration(userId, email, token), Commands.ConfirmEmail(userId, token))
 
   val commandsWrongIdentity: List[Commands] =
-    List(Commands.Register(userId, email, token), Commands.Confirm(anotherUserId, token))
+    List(
+      Commands.StartRegistration(userId, email, token),
+      Commands.ConfirmEmail(anotherUserId, token),
+    )
 
   val commandsWrongToken: List[Commands] =
-    List(Commands.Register(userId, email, token), Commands.Confirm(userId, anotherToken))
+    List(
+      Commands.StartRegistration(userId, email, token),
+      Commands.ConfirmEmail(userId, anotherToken),
+    )
 
   val commandsNoTransition: List[Commands] =
-    List(Commands.Register(userId, email, token), Commands.GDPRDeletion(userId))
+    List(Commands.StartRegistration(userId, email, token), Commands.DeleteDueToGDPR(userId))
 
-  List(
-    userRegistration.traverse(commands)(States.PotentialCustomer()),
-    userRegistration.traverse(commandsWrongIdentity)(States.PotentialCustomer()),
-    userRegistration.traverse(commandsWrongToken)(States.PotentialCustomer()),
-    userRegistration.traverse(commandsNoTransition)(States.PotentialCustomer()),
-  ).foreach(println)
+  aggregateImplementations.foreach(aggregate =>
+    List(
+      aggregate,
+      aggregate.traverse(commands)(States.PotentialCustomer()),
+      aggregate.traverse(commandsWrongIdentity)(States.PotentialCustomer()),
+      aggregate.traverse(commandsWrongToken)(States.PotentialCustomer()),
+      aggregate.traverse(commandsNoTransition)(States.PotentialCustomer()),
+    ).foreach(println),
+  )
 }

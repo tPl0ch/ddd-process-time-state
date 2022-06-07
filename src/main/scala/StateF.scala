@@ -1,8 +1,7 @@
 package org.tp.process_time_state
 
-import cats.{ Applicative, FlatMap, Functor, Monad }
-import cats.data.Kleisli
 import cats.implicits.*
+import cats.{ Applicative, FlatMap, Functor, Id, Monad }
 
 type StateF[F[_], S, A] = S => F[(S, A)]
 
