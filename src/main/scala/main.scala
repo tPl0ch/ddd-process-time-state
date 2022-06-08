@@ -1,18 +1,20 @@
 package org.tp.process_time_state
 
-import UserRegistration.*
+import AccountRegistration.*
+import FST.*
+import Aggregate.*
+
+import cats.implicits.*
 
 import java.util.UUID
 
 @main
 def main(): Unit = {
-  val userId        = UserId(UUID.randomUUID())
-  val anotherUserId = UserId(UUID.randomUUID())
+  val userId        = AccountId(UUID.randomUUID())
+  val anotherUserId = AccountId(UUID.randomUUID())
   val email         = Email("test@example.org")
   val token         = Token("token")
   val anotherToken  = Token("another-token")
-
-  val aggregateImplementations = List(UserRegistration.simple(), UserRegistration.withEvents())
 
   val commands: List[Commands] =
     List(Commands.StartRegistration(userId, email, token), Commands.ConfirmEmail(userId, token))
@@ -32,13 +34,26 @@ def main(): Unit = {
   val commandsNoTransition: List[Commands] =
     List(Commands.StartRegistration(userId, email, token), Commands.DeleteDueToGDPR(userId))
 
-  aggregateImplementations.foreach(aggregate =>
-    List(
-      aggregate,
-      aggregate.traverse(commands)(States.PotentialCustomer()),
-      aggregate.traverse(commandsWrongIdentity)(States.PotentialCustomer()),
-      aggregate.traverse(commandsWrongToken)(States.PotentialCustomer()),
-      aggregate.traverse(commandsNoTransition)(States.PotentialCustomer()),
-    ).foreach(println),
-  )
+  val simple = AccountRegistration.simple()
+  List(
+    simple,
+    simple.toFSM.run(commands)(States.PotentialCustomer()),
+    simple.toFSM.run(commandsWrongIdentity)(States.PotentialCustomer()),
+    simple.toFSM.run(commandsWrongToken)(States.PotentialCustomer()),
+    simple.toFSM.run(commandsNoTransition)(States.PotentialCustomer()),
+  ).foreach(println)
+
+  val withEvents = AccountRegistration.withEvents()
+  List(
+    s"$withEvents FSM",
+    withEvents.toFSM.run(commands)(States.PotentialCustomer()),
+    withEvents.toFSM.run(commandsWrongIdentity)(States.PotentialCustomer()),
+    withEvents.toFSM.run(commandsWrongToken)(States.PotentialCustomer()),
+    withEvents.toFSM.run(commandsNoTransition)(States.PotentialCustomer()),
+    s"$withEvents FST",
+    withEvents.toFST.run(commands)(States.PotentialCustomer()),
+    withEvents.toFST.run(commandsWrongIdentity)(States.PotentialCustomer()),
+    withEvents.toFST.run(commandsWrongToken)(States.PotentialCustomer()),
+    withEvents.toFST.run(commandsNoTransition)(States.PotentialCustomer()),
+  ).foreach(println)
 }

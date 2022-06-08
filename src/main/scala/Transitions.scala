@@ -49,18 +49,6 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
     */
   def transitions: TransitionF
 
-  def state(using F: FlatMap[F]): C => StateF[F, S, Unit] =
-    (currentCommand: C) =>
-      (currentState: S) =>
-        for {
-          newState <- transitions((currentCommand, currentState))
-        } yield (newState, ())
-
-  def traverse(commands: List[C])(using F: Monad[F]): StateF[F, S, Unit] =
-    for {
-      _ <- StateF.traverse(commands)(state(_))
-    } yield ()
-
   /** This error is indicated when there is no TransitionF for a LabelIn.
     */
   private final case class TransitionNotDefined(l: LabelIn) extends DomainError {

@@ -18,17 +18,14 @@ trait Identities[F[_]] { self: Aggregate[F] =>
     * @param otherId
     *   The rhs ID.
     */
-  final case class IdentitiesDoNotMatch(
-      thisId: ID | PreGenesis.type,
-      otherId: ID | PreGenesis.type,
-  ) extends DomainError {
+  final case class IdentitiesDoNotMatch(thisId: UID[ID], otherId: UID[ID]) extends DomainError {
     def msg: String = s"Identities $thisId and $otherId do not match"
   }
 
   /** This factory function lets you create an identity guard for a specific behavior.
     *
     * @param equalIdentities
-    *   The EqualIdentities[ID, GENESIS] implicit type-class
+    *   The EqualIdentities[ID] implicit type-class
     * @return
     *   An InvariantF built from the provided types
     */
