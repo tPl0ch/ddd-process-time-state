@@ -21,10 +21,10 @@ trait Aggregate[F[_]] extends Identities[F] with Transitions[F] {
 object Aggregate {
 
   extension [F[_], T <: Aggregate[F]](a: T)
-    def toFSM(using F: FlatMap[F]): FSM[F, a.C, a.S] = (c: a.C) =>
-      Kleisli { (s: a.S) =>
+    def toFSM(using F: FlatMap[F]): FSM[F, a.C, a.S] = (currentCommand: a.C) =>
+      Kleisli { (currentState: a.S) =>
         for {
-          newState <- a.transitions((c, s))
+          newState <- a.transitions((currentCommand, currentState))
         } yield (newState, ())
       }
 

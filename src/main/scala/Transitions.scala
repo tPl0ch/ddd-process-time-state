@@ -104,10 +104,12 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
     final def liftK(using
         F: ApplicativeError[F, NEC],
         isFinal: IsEnd[S],
-    ): TransitionF = Kleisli { (c: C, s: S) =>
-      if isFinal(s) then
-        NonEmptyChain.one(LifecycleHasEnded((c, s)).asInstanceOf[EE]).raiseError[F, S]
-      else maybe((c, s))
+    ): TransitionF = Kleisli { (currentCommand: C, currentState: S) =>
+      if isFinal(currentState) then
+        NonEmptyChain
+          .one(LifecycleHasEnded((currentCommand, currentState)).asInstanceOf[EE])
+          .raiseError[F, S]
+      else maybe((currentCommand, currentState))
     }
 }
 
