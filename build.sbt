@@ -1,6 +1,15 @@
 ThisBuild / version      := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.1.2"
 
+ThisBuild / scalacOptions ++= Seq(
+  "-encoding",
+  "utf8",             // Option and arguments on same line
+  "-Xfatal-warnings", // New lines for each options
+  "-deprecation",
+  "-unchecked",
+  "-source:future",
+)
+
 lazy val V = new {
   val cats = "2.7.0"
 }
@@ -14,6 +23,6 @@ lazy val root = (project in file("."))
     name             := "process-time-state",
     idePackagePrefix := Some("org.tp.process_time_state"),
     libraryDependencies ++= Seq(
-      dependencies.cats
-    )
+      dependencies.cats,
+    ),
   )
