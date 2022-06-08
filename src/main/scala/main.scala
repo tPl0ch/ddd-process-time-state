@@ -1,8 +1,8 @@
 package org.tp.process_time_state
 
 import AccountRegistration.*
-import FST.*
 import Aggregate.*
+import FST.*
 
 import cats.implicits.*
 

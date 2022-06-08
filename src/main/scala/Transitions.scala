@@ -1,12 +1,11 @@
 package org.tp.process_time_state
 
 import Lifecycle.IsEnd
-import StateF.*
 
-import cats.{ ApplicativeError, FlatMap, Monad }
 import cats.data.*
 import cats.data.Validated.{ Invalid, Valid }
 import cats.implicits.*
+import cats.{ ApplicativeError, FlatMap, Monad }
 
 import scala.annotation.targetName
 

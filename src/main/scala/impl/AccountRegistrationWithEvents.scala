@@ -3,7 +3,7 @@ package impl
 
 import AccountRegistration.Commands.{ ConfirmEmail, StartRegistration }
 import AccountRegistration.States.{ PotentialCustomer, WaitingForEmailRegistration }
-import AccountRegistration.{ Email, Token, AccountId }
+import AccountRegistration.{ AccountId, Email, Token }
 import identity.HasIdentity
 
 import cats.implicits.*

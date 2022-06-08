@@ -1,12 +1,12 @@
 package org.tp.process_time_state
 
-import Lifecycle.*
+import AccountRegistration.*
 import AccountRegistration.Commands.*
 import AccountRegistration.States.*
-import AccountRegistration.*
 import AccountRegistration.givens.given
+import Lifecycle.*
 import identity.*
-import impl.{ SimpleAccountRegistration, AccountRegistrationWithEvents }
+import impl.{ AccountRegistrationWithEvents, SimpleAccountRegistration }
 
 import cats.data.{ Kleisli, NonEmptyChain }
 import cats.instances.either.*

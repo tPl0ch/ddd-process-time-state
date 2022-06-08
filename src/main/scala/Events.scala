@@ -2,9 +2,9 @@ package org.tp.process_time_state
 
 import identity.HasIdentity
 
-import cats.{ ApplicativeError, FlatMap, Monad }
 import cats.data.Kleisli
 import cats.implicits.*
+import cats.{ ApplicativeError, FlatMap, Monad }
 
 import scala.annotation.targetName
 
