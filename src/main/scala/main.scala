@@ -37,23 +37,23 @@ def main(): Unit = {
   val simple = AccountRegistration.simple()
   List(
     simple,
-    simple.toFSM.run(commands)(States.PotentialCustomer()),
-    simple.toFSM.run(commandsWrongIdentity)(States.PotentialCustomer()),
-    simple.toFSM.run(commandsWrongToken)(States.PotentialCustomer()),
-    simple.toFSM.run(commandsNoTransition)(States.PotentialCustomer()),
+    simple.toFSM.runAll(commands)(States.PotentialCustomer()),
+    simple.toFSM.runAll(commandsWrongIdentity)(States.PotentialCustomer()),
+    simple.toFSM.runAll(commandsWrongToken)(States.PotentialCustomer()),
+    simple.toFSM.runAll(commandsNoTransition)(States.PotentialCustomer()),
   ).foreach(println)
 
   val withEvents = AccountRegistration.withEvents()
   List(
     s"$withEvents FSM",
-    withEvents.toFSM.run(commands)(States.PotentialCustomer()),
-    withEvents.toFSM.run(commandsWrongIdentity)(States.PotentialCustomer()),
-    withEvents.toFSM.run(commandsWrongToken)(States.PotentialCustomer()),
-    withEvents.toFSM.run(commandsNoTransition)(States.PotentialCustomer()),
+    withEvents.toFSM.runAll(commands)(States.PotentialCustomer()),
+    withEvents.toFSM.runAll(commandsWrongIdentity)(States.PotentialCustomer()),
+    withEvents.toFSM.runAll(commandsWrongToken)(States.PotentialCustomer()),
+    withEvents.toFSM.runAll(commandsNoTransition)(States.PotentialCustomer()),
     s"$withEvents FST",
-    withEvents.toFST.run(commands)(States.PotentialCustomer()),
-    withEvents.toFST.run(commandsWrongIdentity)(States.PotentialCustomer()),
-    withEvents.toFST.run(commandsWrongToken)(States.PotentialCustomer()),
-    withEvents.toFST.run(commandsNoTransition)(States.PotentialCustomer()),
+    withEvents.toFST.runAll(commands)(States.PotentialCustomer()),
+    withEvents.toFST.runAll(commandsWrongIdentity)(States.PotentialCustomer()),
+    withEvents.toFST.runAll(commandsWrongToken)(States.PotentialCustomer()),
+    withEvents.toFST.runAll(commandsNoTransition)(States.PotentialCustomer()),
   ).foreach(println)
 }
