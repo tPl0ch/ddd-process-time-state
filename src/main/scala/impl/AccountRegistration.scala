@@ -1,24 +1,28 @@
 package org.tp.process_time_state
+package impl
 
-import AccountRegistration.*
-import AccountRegistration.Commands.*
-import AccountRegistration.States.*
-import AccountRegistration.givens.given
 import Lifecycle.*
 import identity.*
+import impl.AccountRegistration.*
+import impl.AccountRegistration.Commands.*
+import impl.AccountRegistration.States.*
+import impl.AccountRegistration.givens.given
 import impl.{ AccountRegistrationWithEvents, SimpleAccountRegistration }
 
-import cats.data.{ Kleisli, NonEmptyChain }
+import cats.data.{ EitherT, Kleisli, NonEmptyChain }
+import cats.implicits.*
 import cats.instances.either.*
+import cats.instances.future.*
 import cats.syntax.either.*
 import cats.syntax.validated.*
 
 import java.util.UUID
+import scala.concurrent.Future
 
-type ErrorOr[A] = Either[NonEmptyChain[AccountRegistrationError], A]
+type ErrorOr[A] = EitherT[Future, NonEmptyChain[AccountRegistrationError], A]
 
-abstract class AccountRegistration extends Aggregate[ErrorOr] {
-
+abstract class AccountRegistration(using ec: scala.concurrent.ExecutionContext)
+    extends Aggregate[ErrorOr] {
   final override type ID = AccountId
   final override type C  = Commands
   final override type S  = States
@@ -29,7 +33,7 @@ abstract class AccountRegistration extends Aggregate[ErrorOr] {
 
   val startRegistration: Transition =
     case (c: StartRegistration, _: PotentialCustomer) =>
-      WaitingForEmailRegistration(c.id, c.email, c.token).asRight
+      EitherT.apply(Future.successful(WaitingForEmailRegistration(c.id, c.email, c.token).asRight))
 
   val tokensMustMatch: Invariant = { case (c: ConfirmEmail, s: WaitingForEmailRegistration) =>
     if c.token.value != s.token.value then InvalidToken(c.token).invalidNec else ().validNec
@@ -37,14 +41,16 @@ abstract class AccountRegistration extends Aggregate[ErrorOr] {
 
   val emailConfirmation: Transition =
     case (_: ConfirmEmail, s: WaitingForEmailRegistration) =>
-      Active(s.id, s.email).asRight
+      EitherT.apply(Future.successful(Active(s.id, s.email).asRight))
 }
 
 object AccountRegistration {
 
-  def simple(): SimpleAccountRegistration = new SimpleAccountRegistration
+  def simple(using ec: scala.concurrent.ExecutionContext): SimpleAccountRegistration =
+    new SimpleAccountRegistration
 
-  def withEvents(): AccountRegistrationWithEvents = new AccountRegistrationWithEvents
+  def withEvents(using ec: scala.concurrent.ExecutionContext): AccountRegistrationWithEvents =
+    new AccountRegistrationWithEvents
 
   sealed trait AccountRegistrationError extends DomainError
 

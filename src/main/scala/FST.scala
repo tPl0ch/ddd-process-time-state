@@ -1,10 +1,10 @@
 package org.tp.process_time_state
 
-import StateK.unit
+import StateK.lift
 
 import cats.data.Kleisli
 import cats.implicits.*
-import cats.{ FlatMap, Monad }
+import cats.{ FlatMap, Functor, Monad }
 
 import scala.annotation.targetName
 
@@ -15,23 +15,22 @@ final type FST[F[_], In, State, Out] = In => StateK[F, State, Out]
 final type FSM[F[_], In, State] = FST[F, In, State, Unit]
 
 object FST {
-  extension [F[_], C, S](machine: FST[F, C, S, Unit])
-    @targetName("fsmAll")
-    def runAll(commands: List[C])(using F: Monad[F]): StateK[F, S, Unit] =
-      machine.traverse(commands).map((s, _) => (s, ()))
-
   extension [F[_], C, S, E](transducer: FST[F, C, S, E])
-    @targetName("fstAll")
-    def runAll(commands: List[C])(using F: Monad[F]): StateK[F, S, List[E]] =
-      transducer.traverse(commands)
+    def run(command: C)(state: S)(using F: Functor[F]): F[E] =
+      F.map(transducer(command)(state))((_, e) => e)
+
+    def runAll(commands: List[C])(state: S)(using F: Monad[F]): F[List[E]] =
+      for {
+        (_, acc) <- transducer.traverse(commands)(state)
+      } yield acc
 
     def traverse(commands: List[C])(using F: Monad[F]): StateK[F, S, List[E]] =
-      commands
-        .foldLeft(unit[F, S, List[E]](Nil)) { (k, command) =>
-          k.flatMap { (s, acc) =>
-            Kleisli { _ => F.map(transducer(command)(s))((s1, e) => (s1, acc.appended(e))) }
-          }
-        }
+      commands.foldLeft(lift[F, S, List[E]](Nil)) { (stateK, command) =>
+        for {
+          (currentState, acc) <- stateK
+          (newState, event)   <- StateK.set(transducer(command)(currentState))
+        } yield (newState, acc.appended(event))
+      }
 
     def compose[S1, E1](other: FST[F, E, S1, E1])(using F: FlatMap[F]): FST[F, C, (S, S1), E1] =
       (command: C) =>
