@@ -12,13 +12,13 @@ import domain.{
   RegistrationEither,
 }
 
-import cats.{ Applicative, ApplicativeError }
 import cats.data.{ EitherT, NonEmptyChain }
 import cats.effect.implicits.*
 import cats.effect.{ IO, IOApp }
 import cats.implicits.*
 import cats.instances.either.*
 import cats.syntax.either.*
+import cats.{ Applicative, ApplicativeError }
 
 import java.util.UUID
 import scala.concurrent.Await

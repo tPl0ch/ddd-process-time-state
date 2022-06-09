@@ -2,8 +2,6 @@ package org.tp.process_time_state
 package examples
 
 import Aggregate.*
-
-import Data.*
 import FST.*
 import domain.AccountRegistration.*
 import domain.{
@@ -12,6 +10,7 @@ import domain.{
   AccountsReadModel,
   RegistrationEither,
 }
+import examples.Data.*
 
 import cats.Applicative
 import cats.data.{ EitherT, NonEmptyChain }

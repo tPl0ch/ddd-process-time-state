@@ -3,12 +3,12 @@ package domain
 
 import Aggregate.*
 import Lifecycle.*
-import identity.*
 import domain.AccountProfile.Commands.{ AddAddress, CreateProfile }
 import domain.AccountProfile.Events.{ AddressAdded, ProfileGenerated }
 import domain.AccountProfile.States.{ CompletedProfile, NoProfile, UncompletedProfile }
 import domain.AccountProfile.givens.given
 import domain.AccountRegistration.AccountRegistrationError
+import identity.*
 
 import cats.data.{ EitherT, NonEmptyChain }
 import cats.effect.IO
@@ -22,8 +22,6 @@ import scala.concurrent.{ ExecutionContext, Future }
 type ProfileEither[A] = EitherT[IO, NonEmptyChain[AccountProfile.AccountProfileError], A]
 
 final class AccountProfile extends Aggregate[ProfileEither] with Events[ProfileEither] {
-
-  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   /** The Command alphabet type as a subtype of HasIdentity[ID] */
   override type C = AccountProfile.Commands

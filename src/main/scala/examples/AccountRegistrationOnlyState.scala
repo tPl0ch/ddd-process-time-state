@@ -29,12 +29,12 @@ object AccountRegistrationOnlyState extends IOApp.Simple {
   def loadState[F[_]](using F: Applicative[F]): F[States] =
     F.pure(States.PotentialCustomer())
 
-  def saveState[F[_]](using F: Applicative[F]): F[Unit] = F.unit
+  def saveState[F[_]](using F: Applicative[F]): States => F[Unit] = _ => F.unit
 
   val accountRegistration: FSM[RegistrationEither, Commands, States] = (command: Commands) =>
     for {
       (currentState, _) <- withEvents.toFSM(command)
-      _                 <- StateK.lift(saveState[RegistrationEither])
+      _                 <- StateK.lift(saveState[RegistrationEither](currentState))
     } yield (currentState, ())
 
   val accountRegistrationIO: EitherT[IO, NonEmptyChain[AccountRegistrationError], Unit] =

@@ -2,12 +2,12 @@ package org.tp.process_time_state
 package domain
 
 import Lifecycle.*
-import identity.*
 import domain.AccountRegistration.*
 import domain.AccountRegistration.Commands.*
 import domain.AccountRegistration.States.*
 import domain.AccountRegistration.givens.given
 import domain.{ AccountRegistrationWithEvents, SimpleAccountRegistration }
+import identity.*
 
 import cats.Show
 import cats.data.{ EitherT, Kleisli, NonEmptyChain }

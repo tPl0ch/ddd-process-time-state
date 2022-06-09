@@ -1,10 +1,10 @@
 package org.tp.process_time_state
 package domain
 
-import identity.HasIdentity
 import domain.AccountRegistration.Commands.{ ConfirmEmail, StartRegistration }
 import domain.AccountRegistration.States.{ PotentialCustomer, WaitingForEmailRegistration }
 import domain.AccountRegistration.{ AccountId, Email, Token }
+import identity.HasIdentity
 
 import cats.data.EitherT
 import cats.effect.IO
