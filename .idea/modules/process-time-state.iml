@@ -15,6 +15,9 @@
     <orderEntry type="library" name="sbt: org.scala-lang:scala-library:2.13.8:jar" level="project" />
     <orderEntry type="library" name="sbt: org.scala-lang:scala3-library_3:3.1.2:jar" level="project" />
     <orderEntry type="library" name="sbt: org.typelevel:cats-core_3:2.7.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.typelevel:cats-effect-kernel_3:3.3.12:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.typelevel:cats-effect-std_3:3.3.12:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.typelevel:cats-effect_3:3.3.12:jar" level="project" />
     <orderEntry type="library" name="sbt: org.typelevel:cats-kernel_3:2.7.0:jar" level="project" />
     <orderEntry type="library" name="sbt: org.typelevel:simulacrum-scalafix-annotations_3:0.5.4:jar" level="project" />
   </component>

@@ -1,8 +1,8 @@
 package org.tp.process_time_state
-package impl
+package domain
 
-import impl.AccountRegistration.*
-import impl.AccountRegistrationWithEvents.*
+import domain.AccountRegistration.*
+import domain.AccountRegistrationWithEvents.*
 
 import cats.Applicative
 import cats.data.Kleisli

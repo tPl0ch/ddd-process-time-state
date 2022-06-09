@@ -1,28 +1,28 @@
 package org.tp.process_time_state
-package impl
+package domain
 
 import Lifecycle.*
 import identity.*
-import impl.AccountRegistration.*
-import impl.AccountRegistration.Commands.*
-import impl.AccountRegistration.States.*
-import impl.AccountRegistration.givens.given
-import impl.{ AccountRegistrationWithEvents, SimpleAccountRegistration }
+import domain.AccountRegistration.*
+import domain.AccountRegistration.Commands.*
+import domain.AccountRegistration.States.*
+import domain.AccountRegistration.givens.given
+import domain.{ AccountRegistrationWithEvents, SimpleAccountRegistration }
 
+import cats.Show
 import cats.data.{ EitherT, Kleisli, NonEmptyChain }
+import cats.effect.IO
 import cats.implicits.*
 import cats.instances.either.*
-import cats.instances.future.*
 import cats.syntax.either.*
 import cats.syntax.validated.*
 
 import java.util.UUID
 import scala.concurrent.Future
 
-type ErrorOr[A] = EitherT[Future, NonEmptyChain[AccountRegistrationError], A]
+type RegistrationEither[A] = EitherT[IO, NonEmptyChain[AccountRegistrationError], A]
 
-abstract class AccountRegistration(using ec: scala.concurrent.ExecutionContext)
-    extends Aggregate[ErrorOr] {
+abstract class AccountRegistration extends Aggregate[RegistrationEither] {
   final override type ID = AccountId
   final override type C  = Commands
   final override type S  = States
@@ -33,7 +33,7 @@ abstract class AccountRegistration(using ec: scala.concurrent.ExecutionContext)
 
   val startRegistration: Transition =
     case (c: StartRegistration, _: PotentialCustomer) =>
-      EitherT.apply(Future.successful(WaitingForEmailRegistration(c.id, c.email, c.token).asRight))
+      EitherT.apply(IO.pure(WaitingForEmailRegistration(c.id, c.email, c.token).asRight))
 
   val tokensMustMatch: Invariant = { case (c: ConfirmEmail, s: WaitingForEmailRegistration) =>
     if c.token.value != s.token.value then InvalidToken(c.token).invalidNec else ().validNec
@@ -41,16 +41,14 @@ abstract class AccountRegistration(using ec: scala.concurrent.ExecutionContext)
 
   val emailConfirmation: Transition =
     case (_: ConfirmEmail, s: WaitingForEmailRegistration) =>
-      EitherT.apply(Future.successful(Active(s.id, s.email).asRight))
+      EitherT.apply(IO.pure(Active(s.id, s.email).asRight))
 }
 
 object AccountRegistration {
 
-  def simple(using ec: scala.concurrent.ExecutionContext): SimpleAccountRegistration =
-    new SimpleAccountRegistration
+  def withoutEvents: SimpleAccountRegistration = new SimpleAccountRegistration
 
-  def withEvents(using ec: scala.concurrent.ExecutionContext): AccountRegistrationWithEvents =
-    new AccountRegistrationWithEvents
+  def withEvents: AccountRegistrationWithEvents = new AccountRegistrationWithEvents
 
   sealed trait AccountRegistrationError extends DomainError
 
@@ -91,5 +89,9 @@ object AccountRegistration {
           case (_: PreGenesis.type, _)      => false // Commands should always have an identity
           case (_, _: PreGenesis.type)      => true  // If there is a pre-genesis state, allow
           case _                            => false
+
+    given showState: Show[States] with
+      override def show(state: States): String = state.toString
+
   }
 }

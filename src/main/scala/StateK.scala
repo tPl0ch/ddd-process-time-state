@@ -14,6 +14,9 @@ object StateK {
 
   def set[F[_], S, A](fas: F[(S, A)]): StateK[F, S, A] = Kleisli(_ => fas)
 
+  def set[F[_], S](fs: F[S])(using F: Functor[F]): StateK[F, Unit, S] =
+    Kleisli(_ => F.map(fs)(((), _)))
+
   def lift[F[_], S, A](a: A)(using F: Applicative[F]): StateK[F, S, A] =
     Kleisli(s => F.pure((s, a)))
 
