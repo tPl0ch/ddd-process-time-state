@@ -3,6 +3,9 @@ package domain.registration
 
 import java.util.UUID
 
+import cats.data.{ EitherT, NonEmptyChain }
+import cats.effect.IO
+
 import Lifecycle.NoId
 import identity.HasId
 
@@ -12,13 +15,13 @@ object Model {
   final case class Email(value: String) extends AnyVal
   final case class Token(value: String) extends AnyVal
 
-  enum Commands extends HasId[AccountId]:
+  enum Command extends HasId[AccountId]:
     case StartRegistration(id: AccountId, email: Email, token: Token)
     case ConfirmEmail(id: AccountId, token: Token)
     case RestartRegistration(id: AccountId)
     case DeleteDueToGDPR(id: AccountId)
 
-  enum States extends HasId[AccountId]:
+  enum State extends HasId[AccountId]:
     case PotentialCustomer(id: NoId.type = NoId)
     case WaitingForEmailRegistration(
         id: AccountId,
@@ -28,4 +31,8 @@ object Model {
     case Active(id: AccountId, email: Email)
     case Deleted(id: AccountId)
 
+  enum Event extends HasId[AccountId]:
+    case RegistrationStarted(id: AccountId, email: Email, token: Token)
+    case EmailConfirmed(id: AccountId, email: Email)
+    case GDPRDeleted(id: AccountId)
 }

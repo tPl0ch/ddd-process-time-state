@@ -13,21 +13,23 @@ import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.duration.*
 
-import FST.*
+import Data.*
+import Machines.*
 import domain.registration.Behaviors.*
-import domain.registration.Behaviors.given
+import domain.registration.Givens.given
 import domain.registration.Model.*
+import domain.registration.Types.*
 
 object AccountRegistrationOnlyState extends IOApp.Simple {
 
-  def loadState[F[_]](using F: Applicative[F]): F[States] =
-    F.pure(States.PotentialCustomer())
+  def loadState[F[_]](using F: Applicative[F]): F[State] =
+    F.pure(State.PotentialCustomer())
 
-  def saveState[F[_]](using F: Applicative[F]): States => F[Unit] = _ => F.unit
+  def saveState[F[_]](using F: Applicative[F]): State => F[Unit] = _ => F.unit
 
-  val accountRegistration: FSM[EIO, Commands, States] = (command: Commands) =>
+  val accountRegistration: FSM[EIO, Command, State] = (command: Command) =>
     for {
-      currentState <- FST(transitions)(command).get
+      currentState <- Machines(transitions)(command).get
       _            <- StateT.liftF(saveState[EIO](currentState))
     } yield ()
 
@@ -35,10 +37,8 @@ object AccountRegistrationOnlyState extends IOApp.Simple {
     for {
       initialState <- loadState[EIO]
       (currentState, _) <- accountRegistration
-        .traverse(Data.AccountRegistration.commands)
-        .run(
-          initialState,
-        )
+        .traverse(AccountRegistration.commands)
+        .run(initialState)
       _ <- EitherT(IO(println(currentState).asRight))
     } yield ()
 

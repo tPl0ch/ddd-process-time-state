@@ -3,7 +3,7 @@ package examples
 
 import java.util.UUID
 
-import domain.registration.Model.{ AccountId, Commands, Email, Token }
+import domain.registration.Model.{ AccountId, Command, Email, Token }
 
 object Data {
   object AccountRegistration {
@@ -13,22 +13,22 @@ object Data {
     val token: Token             = Token("token")
     val anotherToken: Token      = Token("another-token")
 
-    val commands: List[Commands] =
-      List(Commands.StartRegistration(userId, email, token), Commands.ConfirmEmail(userId, token))
+    val commands: List[Command] =
+      List(Command.StartRegistration(userId, email, token), Command.ConfirmEmail(userId, token))
 
-    val commandsWrongIdentity: List[Commands] =
+    val commandsWrongIdentity: List[Command] =
       List(
-        Commands.StartRegistration(userId, email, token),
-        Commands.ConfirmEmail(anotherUserId, token),
+        Command.StartRegistration(userId, email, token),
+        Command.ConfirmEmail(anotherUserId, token),
       )
 
-    val commandsWrongToken: List[Commands] =
+    val commandsWrongToken: List[Command] =
       List(
-        Commands.StartRegistration(userId, email, token),
-        Commands.ConfirmEmail(userId, anotherToken),
+        Command.StartRegistration(userId, email, token),
+        Command.ConfirmEmail(userId, anotherToken),
       )
 
-    val commandsNoTransition: List[Commands] =
-      List(Commands.StartRegistration(userId, email, token), Commands.DeleteDueToGDPR(userId))
+    val commandsNoTransition: List[Command] =
+      List(Command.StartRegistration(userId, email, token), Command.DeleteDueToGDPR(userId))
   }
 }

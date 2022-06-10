@@ -15,7 +15,7 @@ type FST[F[_], C, S, E] = C => StateT[F, S, E]
 /** A Finite-State-Machine (FSM) is just a FST with a Unit Output */
 type FSM[F[_], C, S] = FST[F, C, S, Unit]
 
-object FST {
+object Machines {
   def apply[F[_], C, S](
       transitions: TransitionK[F, C, S, S],
   )(using F: MonadThrow[F], isFinal: IsEnd[S]): FSM[F, C, S] = (currentCommand: C) =>
