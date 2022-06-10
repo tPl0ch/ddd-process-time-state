@@ -9,9 +9,7 @@
         <parameter value="utf8" />
         <parameter value="-source:future" />
         <parameter value="-explain-types" />
-        <parameter value="-Xsemanticdb" />
-        <parameter value="-semanticdb-target" />
-        <parameter value="$PROJECT_DIR$/target/scala-3.1.2/meta" />
+        <parameter value="-Ydebug" />
       </parameters>
     </profile>
   </component>

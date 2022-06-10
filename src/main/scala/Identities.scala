@@ -1,15 +1,11 @@
 package org.tp.process_time_state
 
-import cats.data.ValidatedNec
-import cats.implicits.*
+import cats.syntax.validated.*
 
 import Lifecycle.NoId
 import identity.*
 
-trait Identities[F[_]] { self: Aggregate[F] =>
-
-  /** The type of the Aggregate's identity */
-  type ID
+object Identities {
 
   /** This is the error representation when two Aggregate IDs are not matching.
     *
@@ -18,21 +14,15 @@ trait Identities[F[_]] { self: Aggregate[F] =>
     * @param otherId
     *   The rhs ID.
     */
-  final case class IdentitiesDoNotMatch(thisId: UID[ID], otherId: UID[ID]) extends DomainError {
+  case class IdentitiesDoNotMatch[ID](thisId: UID[ID], otherId: UID[ID]) extends DomainError {
     def msg: String = s"Identities $thisId and $otherId do not match"
   }
 
-  /** This factory function lets you create an identity guard for a specific behavior.
-    *
-    * @param equalIdentities
-    *   The EqualIdentities[ID] implicit type-class
-    * @return
-    *   An InvariantF built from the provided types
-    */
-  final protected def identitiesMustMatch(using
+  def identitiesMustMatch[ID, C <: HasId[ID], S <: HasId[ID], EE <: Throwable](using
       equalIdentities: EqualId[ID],
-  ): Invariant = { case (c: C, s: S) =>
+  ): Invariant[C, S, EE] = { case (c: C, s: S) =>
     if equalIdentities.equals(c.id, s.id) then ().validNec
     else IdentitiesDoNotMatch(c.id, s.id).asInstanceOf[EE].invalidNec
   }
+
 }
