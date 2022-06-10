@@ -20,14 +20,11 @@ import domain.registration.Givens.given
 import domain.registration.Model.*
 import domain.registration.Types.*
 
-object AccountRegistrationOnlyState extends IOApp.Simple {
+/** This example shows how to use a simple state machine to produce and store a state within an IO.
+  */
+object RegistrationStateOnly extends IOApp.Simple with RegistrationRepositories[EIO] {
 
-  def loadState[F[_]](using F: Applicative[F]): F[State] =
-    F.pure(State.PotentialCustomer())
-
-  def saveState[F[_]](using F: Applicative[F]): State => F[Unit] = _ => F.unit
-
-  val accountRegistration: FSM[EIO, Command, State] = (command: Command) =>
+  val accountRegistration: StateMachine = (command: Command) =>
     for {
       currentState <- Machines(transitions)(command).get
       _            <- StateT.liftF(saveState[EIO](currentState))
@@ -42,5 +39,5 @@ object AccountRegistrationOnlyState extends IOApp.Simple {
       _ <- EitherT(IO(println(currentState).asRight))
     } yield ()
 
-  override def run: IO[Unit] = accountRegistrationIO.value.map(_ => ())
+  override def run: IO[Unit] = accountRegistrationIO.value.as(())
 }

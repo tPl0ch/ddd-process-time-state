@@ -17,4 +17,7 @@ object Types {
 
   type StateTransition = Transition[C, S, S, EE]
   type EventOutput     = Transition[C, S, E, EE]
+
+  type StateMachine = FSM[EIO, C, S]
+  type Transducer   = FST[EIO, C, S, E]
 }
