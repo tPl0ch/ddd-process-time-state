@@ -6,7 +6,7 @@ import java.util.UUID
 import domain.registration.Model.{ AccountId, Command, Email, Token }
 
 object Data {
-  object AccountRegistration {
+  object Registration {
     val userId: AccountId        = AccountId(UUID.randomUUID())
     val anotherUserId: AccountId = AccountId(UUID.randomUUID())
     val email: Email             = Email("test@example.org")

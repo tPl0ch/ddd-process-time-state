@@ -21,19 +21,19 @@ import examples.Data.*
 
 object RegistrationEventDriven extends IOApp.Simple with RegistrationRepositories[EIO] {
 
-  val accountRegistration: Transducer = (command: Command) =>
+  val registration: Transducer = (command: Command) =>
     for {
       event <- Machines(transitions)(events)(command)
       _     <- StateT.liftF(saveEvent[EIO](event))
     } yield event
 
-  val accountRegistrationIO: EIO[List[Event]] = for {
+  val registrationIO: EIO[List[Event]] = for {
     initialState <- loadState[EIO]
-    (_, listOfEvents) <- accountRegistration
-      .traverse(Data.AccountRegistration.commands)
+    (_, listOfEvents) <- registration
+      .traverse(Data.Registration.commands)
       .run(initialState)
     _ <- EitherT.liftF(IO(println(listOfEvents)))
   } yield listOfEvents
 
-  override def run: IO[Unit] = accountRegistrationIO.value.as(())
+  override def run: IO[Unit] = registrationIO.value.as(())
 }

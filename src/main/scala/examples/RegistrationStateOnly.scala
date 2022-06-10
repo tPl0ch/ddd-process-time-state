@@ -34,7 +34,7 @@ object RegistrationStateOnly extends IOApp.Simple with RegistrationRepositories[
     for {
       initialState <- loadState[EIO]
       (currentState, _) <- accountRegistration
-        .traverse(AccountRegistration.commands)
+        .traverse(Registration.commands)
         .run(initialState)
       _ <- EitherT(IO(println(currentState).asRight))
     } yield ()
