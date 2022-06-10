@@ -10,7 +10,7 @@ import scala.concurrent.Future
 import domain.AccountRegistration.Commands.{ ConfirmEmail, StartRegistration }
 import domain.AccountRegistration.States.{ PotentialCustomer, WaitingForEmailRegistration }
 import domain.AccountRegistration.{ AccountId, Email, Token }
-import identity.HasIdentity
+import identity.HasId
 
 final class AccountRegistrationWithEvents
     extends AccountRegistration
@@ -31,7 +31,7 @@ final class AccountRegistrationWithEvents
 }
 
 object AccountRegistrationWithEvents {
-  enum Events extends HasIdentity[AccountId]:
+  enum Events extends HasId[AccountId]:
     case RegistrationStarted(id: AccountId, email: Email, token: Token)
     case EmailConfirmed(id: AccountId, email: Email)
     case GDPRDeleted(id: AccountId)

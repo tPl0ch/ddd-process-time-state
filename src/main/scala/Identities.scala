@@ -3,7 +3,7 @@ package org.tp.process_time_state
 import cats.data.ValidatedNec
 import cats.implicits.*
 
-import Lifecycle.PreGenesis
+import Lifecycle.NoId
 import identity.*
 
 trait Identities[F[_]] { self: Aggregate[F] =>
@@ -30,7 +30,7 @@ trait Identities[F[_]] { self: Aggregate[F] =>
     *   An InvariantF built from the provided types
     */
   final protected def identitiesMustMatch(using
-      equalIdentities: EqualIdentities[ID],
+      equalIdentities: EqualId[ID],
   ): Invariant = { case (c: C, s: S) =>
     if equalIdentities.equals(c.id, s.id) then ().validNec
     else IdentitiesDoNotMatch(c.id, s.id).asInstanceOf[EE].invalidNec

@@ -81,18 +81,18 @@ object AccountProfile {
   final case class AccountId(id: UUID) extends AnyVal
   final case class Address(street: String, number: String, poBox: String)
 
-  enum Commands extends HasIdentity[ProfileId]:
+  enum Commands extends HasId[ProfileId]:
     case CreateProfile(id: ProfileId, accountId: AccountId)
     case AddAddress(id: ProfileId, address: Address)
     case DeleteProfile(id: ProfileId)
 
-  enum States extends HasIdentity[ProfileId]:
-    case NoProfile(id: Lifecycle.PreGenesis.type = PreGenesis)
+  enum States extends HasId[ProfileId]:
+    case NoProfile(id: Lifecycle.NoId.type = NoId)
     case UncompletedProfile(id: ProfileId, accountId: AccountId)
     case CompletedProfile(id: ProfileId, accountId: AccountId, address: Address)
     case DeletedProfile(id: ProfileId)
 
-  enum Events extends HasIdentity[ProfileId]:
+  enum Events extends HasId[ProfileId]:
     case ProfileGenerated(id: ProfileId, accountId: AccountId)
     case AddressAdded(id: ProfileId, accountId: AccountId, address: Address)
     case ProfileDeleted(id: ProfileId)
@@ -105,11 +105,11 @@ object AccountProfile {
         case _: States.DeletedProfile => true
         case _                        => false
 
-    given accountIdEquals: EqualIdentities[ProfileId] with
+    given accountIdEquals: EqualId[ProfileId] with
       override def equals(idA: UID[ProfileId], idB: UID[ProfileId]): Boolean =
         (idA, idB) match
           case (a: ProfileId, b: ProfileId) => a.id.equals(b.id)
-          case (_: PreGenesis.type, _)      => false // Commands should always have an identity
-          case (_, _: PreGenesis.type)      => true  // If there is a pre-genesis state, allow
+          case (_: NoId.type, _)            => false // Commands should always have an identity
+          case (_, _: NoId.type)            => true  // If there is a pre-genesis state, allow
   }
 }

@@ -6,13 +6,13 @@ import cats.{ ApplicativeError, FlatMap, Monad }
 
 import scala.annotation.targetName
 
-import identity.HasIdentity
+import identity.HasId
 
 /** This trait provides the Event output types and functions */
 trait Events[F[_]] { self: Aggregate[F] =>
 
   /** The Event alphabet type as a subtype of HasIdentity[ID] */
-  type E <: HasIdentity[ID]
+  type E <: HasId[ID]
 
   /** Events are modelled as a partial function of a LabelIn to an Event */
   final type Outputs = PartialFunction[LabelIn, F[E]]

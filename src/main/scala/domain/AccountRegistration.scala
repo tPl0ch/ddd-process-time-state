@@ -60,14 +60,14 @@ object AccountRegistration {
   final case class Email(value: String) extends AnyVal
   final case class Token(value: String) extends AnyVal
 
-  enum Commands extends HasIdentity[AccountId]:
+  enum Commands extends HasId[AccountId]:
     case StartRegistration(id: AccountId, email: Email, token: Token)
     case ConfirmEmail(id: AccountId, token: Token)
     case RestartRegistration(id: AccountId)
     case DeleteDueToGDPR(id: AccountId)
 
-  enum States extends HasIdentity[AccountId]:
-    case PotentialCustomer(id: PreGenesis.type = PreGenesis)
+  enum States extends HasId[AccountId]:
+    case PotentialCustomer(id: NoId.type = NoId)
     case WaitingForEmailRegistration(
         id: AccountId,
         email: Email,
@@ -82,12 +82,12 @@ object AccountRegistration {
         case _: States.Deleted => true
         case _                 => false
 
-    given accountIdEquals: EqualIdentities[AccountId] with
+    given accountIdEquals: EqualId[AccountId] with
       override def equals(idA: UID[AccountId], idB: UID[AccountId]): Boolean =
         (idA, idB) match
           case (a: AccountId, b: AccountId) => a.id.equals(b.id)
-          case (_: PreGenesis.type, _)      => false // Commands should always have an identity
-          case (_, _: PreGenesis.type)      => true  // If there is a pre-genesis state, allow
+          case (_: NoId.type, _)            => false // Commands should always have an identity
+          case (_, _: NoId.type)            => true  // If there is a pre-genesis state, allow
           case _                            => false
 
     given showState: Show[States] with
