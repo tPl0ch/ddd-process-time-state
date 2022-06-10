@@ -7,8 +7,8 @@ import scala.annotation.targetName
 
 import identity.{ EqualId, HasId }
 
-type InvariantError[+EE <: Throwable]    = ValidatedNec[EE, Unit]
-type Invariant[-C, -S, +EE <: Throwable] = PartialFunction[(C, S), InvariantError[EE]]
+type InvariantError[+EE <: Throwable, A] = ValidatedNec[EE, A]
+type Invariant[-C, -S, +EE <: Throwable] = PartialFunction[(C, S), InvariantError[EE, Unit]]
 
 object Invariants {
 

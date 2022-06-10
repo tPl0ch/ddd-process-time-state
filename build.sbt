@@ -1,5 +1,8 @@
-ThisBuild / version      := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "3.1.2"
+ThisBuild / version           := "0.1.0-SNAPSHOT"
+ThisBuild / scalaVersion      := "3.1.2"
+ThisBuild / semanticdbEnabled := true
+
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions ++= Seq(
   "-encoding",
@@ -8,7 +11,6 @@ ThisBuild / scalacOptions ++= Seq(
   "-unchecked",
   "-source:future",
   "-explain-types",
-  "-Ydebug",
 )
 
 lazy val V = new {
