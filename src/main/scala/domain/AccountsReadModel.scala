@@ -1,12 +1,12 @@
 package org.tp.process_time_state
 package domain
 
-import domain.AccountRegistration.*
-import domain.AccountRegistrationWithEvents.*
-
 import cats.Applicative
 import cats.data.Kleisli
 import cats.implicits.*
+
+import domain.AccountRegistration.*
+import domain.AccountRegistrationWithEvents.*
 
 object AccountsReadModel {
   enum Model:

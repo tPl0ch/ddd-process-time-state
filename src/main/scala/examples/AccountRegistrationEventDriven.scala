@@ -1,6 +1,16 @@
 package org.tp.process_time_state
 package examples
 
+import cats.Applicative
+import cats.data.{ EitherT, NonEmptyChain, StateT }
+import cats.effect.{ IO, IOApp }
+import cats.implicits.*
+import cats.syntax.either.*
+
+import java.util.UUID
+import scala.concurrent.Await
+import scala.concurrent.duration.*
+
 import Aggregate.*
 import FST.*
 import domain.AccountRegistration.*
@@ -11,16 +21,6 @@ import domain.{
   RegistrationEither,
 }
 import examples.Data.*
-
-import cats.Applicative
-import cats.data.{ EitherT, NonEmptyChain }
-import cats.effect.{ IO, IOApp }
-import cats.implicits.*
-import cats.syntax.either.*
-
-import java.util.UUID
-import scala.concurrent.Await
-import scala.concurrent.duration.*
 
 object AccountRegistrationEventDriven extends IOApp.Simple {
 
@@ -33,21 +33,23 @@ object AccountRegistrationEventDriven extends IOApp.Simple {
       F: Applicative[F],
   ): EV => F[Unit] = _ => F.unit
 
-  val accountRegistration: FST[RegistrationEither, Commands, States, EV] =
+  private val accountRegistration =
     (command: Commands) =>
       for {
-        (currentState, event) <- withEvents.toFST(command)
-        _                     <- StateK.lift(storeEvent[RegistrationEither](event))
-      } yield (currentState, event)
+        event <- withEvents.toFST(command)
+        _     <- StateT.liftF(storeEvent[RegistrationEither](event))
+      } yield event
 
-  val accountRegistrationIO: EitherT[IO, NonEmptyChain[AccountRegistrationError], Unit] =
+  private val accountRegistrationIO =
     for {
       initialState <- loadState[RegistrationEither]
-      stateAndEvents <- accountRegistration.traverse(Data.AccountRegistration.commands)(
-        initialState,
-      )
-      _ <- EitherT(IO(println(stateAndEvents).asRight))
-    } yield ()
+      stateAndEvents <- accountRegistration
+        .traverse(Data.AccountRegistration.commands)
+        .run(
+          initialState,
+        )
+    } yield stateAndEvents
 
-  override def run: IO[Unit] = accountRegistrationIO.value.map(_ => ())
+  override def run: IO[Unit] =
+    accountRegistrationIO.value.flatTap(se => IO(println(se))).map(_ => ())
 }

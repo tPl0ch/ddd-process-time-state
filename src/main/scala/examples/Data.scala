@@ -1,10 +1,10 @@
 package org.tp.process_time_state
 package examples
 
+import java.util.UUID
+
 import domain.AccountRegistration.{ AccountId, Commands, Email, Token }
 import domain.{ AccountRegistration, AccountRegistrationWithEvents, SimpleAccountRegistration }
-
-import java.util.UUID
 
 object Data {
   object AccountRegistration {

@@ -1,6 +1,16 @@
 package org.tp.process_time_state
 package examples
 
+import cats.Applicative
+import cats.data.{ EitherT, NonEmptyChain, StateT }
+import cats.effect.{ IO, IOApp }
+import cats.implicits.*
+import cats.syntax.either.*
+
+import java.util.UUID
+import scala.concurrent.Await
+import scala.concurrent.duration.*
+
 import Aggregate.*
 import FST.*
 import domain.AccountRegistration.*
@@ -11,16 +21,6 @@ import domain.{
   RegistrationEither,
 }
 import examples.Data.*
-
-import cats.Applicative
-import cats.data.{ EitherT, NonEmptyChain }
-import cats.effect.{ IO, IOApp }
-import cats.implicits.*
-import cats.syntax.either.*
-
-import java.util.UUID
-import scala.concurrent.Await
-import scala.concurrent.duration.*
 
 object ReadModelProjection extends IOApp.Simple {
 
@@ -35,23 +35,18 @@ object ReadModelProjection extends IOApp.Simple {
       F: Applicative[F],
   ): AccountRegistrationWithEvents.Events => F[Unit] = _ => F.pure(())
 
-  val projection: FST[
-    RegistrationEither,
-    Commands,
-    States,
-    (AccountRegistrationWithEvents.Events, AccountsReadModel.Model),
-  ] =
+  private val projection =
     (c: Commands) =>
       for {
-        (s, event)     <- withEvents.toFST(c)
-        _              <- StateK.lift(storeEvent[RegistrationEither](event))
-        (_, readModel) <- StateK.lift(AccountsReadModel.makeProjection[RegistrationEither](event))
-        _              <- StateK.lift(storeReadModel[RegistrationEither](readModel))
-      } yield (s, (event, readModel))
+        event     <- withEvents.toFST(c)
+        _         <- StateT.liftF(storeEvent[RegistrationEither](event))
+        readModel <- StateT.liftF(AccountsReadModel.makeProjection[RegistrationEither](event))
+        _         <- StateT.liftF(storeReadModel[RegistrationEither](readModel))
+      } yield (event, readModel)
 
-  val projectionIO: EitherT[IO, NonEmptyChain[AccountRegistrationError], Unit] = for {
+  private val projectionIO = for {
     initialState    <- loadInitialState[RegistrationEither]
-    (_, readModels) <- projection.traverse(Data.AccountRegistration.commands)(initialState)
+    (_, readModels) <- projection.traverse(Data.AccountRegistration.commands).run(initialState)
     _               <- EitherT(IO(println(readModels).asRight))
   } yield ()
 

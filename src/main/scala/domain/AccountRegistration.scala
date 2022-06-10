@@ -1,14 +1,6 @@
 package org.tp.process_time_state
 package domain
 
-import Lifecycle.*
-import domain.AccountRegistration.*
-import domain.AccountRegistration.Commands.*
-import domain.AccountRegistration.States.*
-import domain.AccountRegistration.givens.given
-import domain.{ AccountRegistrationWithEvents, SimpleAccountRegistration }
-import identity.*
-
 import cats.Show
 import cats.data.{ EitherT, Kleisli, NonEmptyChain }
 import cats.effect.IO
@@ -20,6 +12,14 @@ import cats.syntax.validated.*
 import java.util.UUID
 import scala.concurrent.Future
 
+import Lifecycle.*
+import domain.AccountRegistration.*
+import domain.AccountRegistration.Commands.*
+import domain.AccountRegistration.States.*
+import domain.AccountRegistration.givens.given
+import domain.{ AccountRegistrationWithEvents, SimpleAccountRegistration }
+import identity.*
+
 type RegistrationEither[A] = EitherT[IO, NonEmptyChain[AccountRegistrationError], A]
 
 abstract class AccountRegistration extends Aggregate[RegistrationEither] {
@@ -29,7 +29,7 @@ abstract class AccountRegistration extends Aggregate[RegistrationEither] {
   final override type EE = AccountRegistrationError
 
   override def transitions: TransitionF = ((startRegistration orElse
-    (emailConfirmation << tokensMustMatch)) << identitiesMustMatch).liftK
+    (emailConfirmation << tokensMustMatch)) << identitiesMustMatch).liftF
 
   val startRegistration: Transition =
     case (c: StartRegistration, _: PotentialCustomer) =>

@@ -1,16 +1,16 @@
 package org.tp.process_time_state
 package domain
 
-import domain.AccountRegistration.Commands.{ ConfirmEmail, StartRegistration }
-import domain.AccountRegistration.States.{ PotentialCustomer, WaitingForEmailRegistration }
-import domain.AccountRegistration.{ AccountId, Email, Token }
-import identity.HasIdentity
-
 import cats.data.EitherT
 import cats.effect.IO
 import cats.implicits.*
 
 import scala.concurrent.Future
+
+import domain.AccountRegistration.Commands.{ ConfirmEmail, StartRegistration }
+import domain.AccountRegistration.States.{ PotentialCustomer, WaitingForEmailRegistration }
+import domain.AccountRegistration.{ AccountId, Email, Token }
+import identity.HasIdentity
 
 final class AccountRegistrationWithEvents
     extends AccountRegistration
@@ -19,7 +19,7 @@ final class AccountRegistrationWithEvents
 
   final override type E = AccountRegistrationWithEvents.Events
 
-  override def events: OutputsF = (registrationStarted orElse emailConfirmed).liftK
+  override def events: OutputsF = (registrationStarted orElse emailConfirmed).liftF
 
   val registrationStarted: Outputs = { case (c: StartRegistration, _: PotentialCustomer) =>
     EitherT(IO.pure(RegistrationStarted(c.id, c.email, c.token).asRight))

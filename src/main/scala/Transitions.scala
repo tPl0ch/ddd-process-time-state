@@ -1,13 +1,13 @@
 package org.tp.process_time_state
 
-import Lifecycle.IsEnd
-
-import cats.data.*
 import cats.data.Validated.{ Invalid, Valid }
+import cats.data.*
 import cats.implicits.*
 import cats.{ ApplicativeError, FlatMap, Monad }
 
 import scala.annotation.targetName
+
+import Lifecycle.IsEnd
 
 /** The Transitions[F] trait provides the Aggregate instance with defining state transitions and
   * invariants.
@@ -20,31 +20,23 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
   /** We are accumulating domain errors in a NonEmptyList */
   final type NEC = NonEmptyChain[EE]
 
-  /** We use the accumulating Validated structure */
-  final type InvariantError = Validated[NEC, Unit]
-
-  /** An Invariant is a partial function that either gives a valid Unit value, or an accumulating
-    * error structure.
-    */
-  final type Invariant = PartialFunction[LabelIn, InvariantError]
-
   /** A Transition is a partial function (not all combinations of commands and states need to have a
     * transition defined) that maps an input label to a state.
     */
   final type Transition = PartialFunction[LabelIn, F[S]]
 
   /** A TransitionF is just an alias to Kleisli[F, LabelIn, S]. Kleisli structures are
-    * representations of functions C => F[S] - exactly what we need to model a function that maps a
-    * Command to a State within the context of F.
+    * representations of functions A => F[B] - exactly what we need to model a function that maps a
+    * (Command, State) pair to a new State within the context of F.
     */
   final type TransitionF = Kleisli[F, LabelIn, S]
 
   /** This abstract method needs to provide all the state transitions supported by the Aggregate.
-    * You can use the `mkTransitionF` helper method to easily lift the composed partial functions
-    * into the Kleisli data structure.
+    * You can use the `liftK` extension method on the Transition type to easily lift the composed
+    * partial functions into a total Kleisli data structure.
     *
     * @see
-    *   mkTransitionF
+    *   liftF
     */
   def transitions: TransitionF
 
@@ -54,25 +46,12 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
     override def msg: String = s"Transition is not defined for command ${l._1} and state ${l._2}"
   }
 
-  /** This error is indicated when there is no Invariant for a LabelIn on a specific TransitionF */
-  private final case class InvariantCannotBeChecked(l: LabelIn) extends DomainError {
-    override def msg: String =
-      s"An Invariant could not be checked for command ${l._1} and state ${l._2}"
-  }
-
   /** This error indicates when the Aggregate is in a final state and can't process any more
     * commands
     */
   private final case class LifecycleHasEnded(l: LabelIn) extends DomainError {
     override def msg: String = s"Command ${l._1} cannot be processed because state ${l._2} is final"
   }
-
-  extension (invariant: Invariant)
-    @targetName("maybeInvariant")
-    final def maybe: Invariant =
-      (l: LabelIn) =>
-        if !invariant.isDefinedAt(l) then ().validNec
-        else invariant(l)
 
   extension (transition: Transition)
 
@@ -101,7 +80,16 @@ trait Transitions[F[_]] { self: Aggregate[F] =>
       Transitions.maybe(transition, l => TransitionNotDefined(l).asInstanceOf[EE])
 
     @targetName("liftTransition")
-    final def liftK(using
+    /** Lifts a Transition into a TransitionF
+      *
+      * @param F
+      *   An implicit ApplicativeError[F, NEC] instance
+      * @param isFinal
+      *   An implicit IsEnd[S] instance that determines if a state is final
+      * @return
+      *   The lifted TransitionF
+      */
+    final protected def liftF(using
         F: ApplicativeError[F, NEC],
         isFinal: IsEnd[S],
     ): TransitionF = Kleisli { (currentCommand: C, currentState: S) =>

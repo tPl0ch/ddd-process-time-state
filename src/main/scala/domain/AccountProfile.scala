@@ -1,15 +1,6 @@
 package org.tp.process_time_state
 package domain
 
-import Aggregate.*
-import Lifecycle.*
-import domain.AccountProfile.Commands.{ AddAddress, CreateProfile }
-import domain.AccountProfile.Events.{ AddressAdded, ProfileGenerated }
-import domain.AccountProfile.States.{ CompletedProfile, NoProfile, UncompletedProfile }
-import domain.AccountProfile.givens.given
-import domain.AccountRegistration.AccountRegistrationError
-import identity.*
-
 import cats.data.{ EitherT, NonEmptyChain }
 import cats.effect.IO
 import cats.implicits.*
@@ -18,6 +9,15 @@ import cats.syntax.either.*
 
 import java.util.UUID
 import scala.concurrent.{ ExecutionContext, Future }
+
+import Aggregate.*
+import Lifecycle.*
+import domain.AccountProfile.Commands.{ AddAddress, CreateProfile }
+import domain.AccountProfile.Events.{ AddressAdded, ProfileGenerated }
+import domain.AccountProfile.States.{ CompletedProfile, NoProfile, UncompletedProfile }
+import domain.AccountProfile.givens.given
+import domain.AccountRegistration.AccountRegistrationError
+import identity.*
 
 type ProfileEither[A] = EitherT[IO, NonEmptyChain[AccountProfile.AccountProfileError], A]
 
@@ -43,7 +43,7 @@ final class AccountProfile extends Aggregate[ProfileEither] with Events[ProfileE
     * @return
     *   The lifted partial output function that provides the Aggregate's Events within the context F
     */
-  override def events: OutputsF = (profileGenerated orElse addressAdded).liftK
+  override def events: OutputsF = (profileGenerated orElse addressAdded).liftF
 
   /** This abstract method needs to provide all the state transitions supported by the Aggregate.
     * You can use the `mkTransitionF` helper method to easily lift the composed partial functions
@@ -53,7 +53,7 @@ final class AccountProfile extends Aggregate[ProfileEither] with Events[ProfileE
     *   mkTransitionF
     */
   override def transitions: TransitionF =
-    ((createProfile orElse addAddress) << identitiesMustMatch).liftK
+    ((createProfile orElse addAddress) << identitiesMustMatch).liftF
 
   val createProfile: Transition = { case (command: CreateProfile, _: NoProfile) =>
     EitherT(IO.pure(UncompletedProfile(command.id, command.accountId).asRight))
@@ -84,7 +84,6 @@ object AccountProfile {
   enum Commands extends HasIdentity[ProfileId]:
     case CreateProfile(id: ProfileId, accountId: AccountId)
     case AddAddress(id: ProfileId, address: Address)
-    case ChangeAddress(id: ProfileId, newAddress: Address)
     case DeleteProfile(id: ProfileId)
 
   enum States extends HasIdentity[ProfileId]:
@@ -96,7 +95,6 @@ object AccountProfile {
   enum Events extends HasIdentity[ProfileId]:
     case ProfileGenerated(id: ProfileId, accountId: AccountId)
     case AddressAdded(id: ProfileId, accountId: AccountId, address: Address)
-    case AddressChanged(id: ProfileId, accountId: AccountId, address: Address)
     case ProfileDeleted(id: ProfileId)
 
   sealed trait AccountProfileError extends DomainError
@@ -113,6 +111,5 @@ object AccountProfile {
           case (a: ProfileId, b: ProfileId) => a.id.equals(b.id)
           case (_: PreGenesis.type, _)      => false // Commands should always have an identity
           case (_, _: PreGenesis.type)      => true  // If there is a pre-genesis state, allow
-          case _                            => false
   }
 }

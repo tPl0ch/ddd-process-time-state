@@ -1,10 +1,10 @@
 package org.tp.process_time_state
 
-import Lifecycle.PreGenesis
-import identity.*
-
 import cats.data.ValidatedNec
 import cats.implicits.*
+
+import Lifecycle.PreGenesis
+import identity.*
 
 trait Identities[F[_]] { self: Aggregate[F] =>
 

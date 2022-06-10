@@ -1,12 +1,12 @@
 package org.tp.process_time_state
 
-import identity.HasIdentity
-
 import cats.data.Kleisli
 import cats.implicits.*
 import cats.{ ApplicativeError, FlatMap, Monad }
 
 import scala.annotation.targetName
+
+import identity.HasIdentity
 
 /** This trait provides the Event output types and functions */
 trait Events[F[_]] { self: Aggregate[F] =>
@@ -42,5 +42,5 @@ trait Events[F[_]] { self: Aggregate[F] =>
 
     @targetName("liftOutputs")
     /** Lifts an Events output function into a Kleisli */
-    final def liftK(using F: ApplicativeError[F, NEC]): OutputsF = Kleisli { maybe(_) }
+    final def liftF(using F: ApplicativeError[F, NEC]): OutputsF = Kleisli { maybe(_) }
 }

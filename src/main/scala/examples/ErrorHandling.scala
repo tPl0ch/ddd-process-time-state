@@ -1,18 +1,7 @@
 package org.tp.process_time_state
 package examples
 
-import Aggregate.*
-import FST.*
-import domain.AccountRegistration.*
-import domain.AccountRegistration.givens.given
-import domain.{
-  AccountRegistration,
-  AccountRegistrationWithEvents,
-  AccountsReadModel,
-  RegistrationEither,
-}
-
-import cats.data.{ EitherT, NonEmptyChain }
+import cats.data.{ EitherT, NonEmptyChain, StateT }
 import cats.effect.implicits.*
 import cats.effect.{ IO, IOApp }
 import cats.implicits.*
@@ -23,6 +12,17 @@ import cats.{ Applicative, ApplicativeError }
 import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.duration.*
+
+import Aggregate.*
+import FST.*
+import domain.AccountRegistration.*
+import domain.AccountRegistration.givens.given
+import domain.{
+  AccountRegistration,
+  AccountRegistrationWithEvents,
+  AccountsReadModel,
+  RegistrationEither,
+}
 
 object ErrorHandling extends IOApp.Simple {
 
@@ -41,19 +41,21 @@ object ErrorHandling extends IOApp.Simple {
   val accountRegistrationFailingState: FSM[RegistrationEither, Commands, States] =
     (command: Commands) =>
       for {
-        (currentState, _) <- withEvents.toFSM(command)
-        _                 <- StateK.lift(saveStateFailure[RegistrationEither](currentState))
-      } yield (currentState, ())
+        currentState <- withEvents.toFSM(command).get
+        _            <- StateT.liftF(saveState[RegistrationEither](currentState))
+        // _         <- StateT.liftF(saveStateFailure[RegistrationEither](currentState))
+      } yield ()
 
   val accountRegistrationIO: EitherT[IO, NonEmptyChain[AccountRegistrationError], Unit] =
     for {
       initialState <- loadState[RegistrationEither]
-      _ <- accountRegistrationFailingState.traverse(
-        Data.AccountRegistration.commands,
-      )(
-        initialState,
-      )
+      _ <- accountRegistrationFailingState
+        .traverse(Data.AccountRegistration.commandsWrongToken)
+        // .traverse(Data.AccountRegistration.commandsWrongIdentity)
+        // .traverse(Data.AccountRegistration.commandsNoTransition)
+        .run(initialState)
     } yield ()
 
-  override def run: IO[Unit] = accountRegistrationIO.value.map(_ => ())
+  override def run: IO[Unit] =
+    accountRegistrationIO.leftSemiflatTap(nec => IO(println(nec))).value.map(_ => ())
 }
