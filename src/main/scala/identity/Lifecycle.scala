@@ -10,6 +10,6 @@ import Identities.UID
   * An implementer can decide if a concrete ID type or the NoIdentitySet singleton should be
   * returned.
   */
-trait HasId[ID] {
+trait Lifecycle[ID] {
   def id: UID[ID]
 }

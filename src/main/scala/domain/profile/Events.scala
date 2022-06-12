@@ -11,16 +11,16 @@ import domain.profile.Types.*
 
 object Events {
 
-  def events: TransitionK[EIO, C, S, E] =
+  def events: OutputsK[EIO, C, S, E] =
     (profileGenerated orElse addressAdded).liftF
 
   val profileGenerated: EventOutput = { case (command: Command.CreateProfile, _: State.NoProfile) =>
-    Event.ProfileGenerated(command.id, command.accountId).validNec
+    Event.ProfileGenerated(command.id, command.accountId)
   }
 
   val addressAdded: EventOutput = {
     case (command: Command.AddAddress, state: State.UncompletedProfile) =>
-      Event.AddressAdded(state.id, state.accountId, command.address).validNec
+      Event.AddressAdded(state.id, state.accountId, command.address)
   }
 
   private implicit val eventsError: (C, S) => EE = (c: C, s: S) => EventNotDefined(c, s)

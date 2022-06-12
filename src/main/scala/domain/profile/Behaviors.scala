@@ -12,7 +12,7 @@ import domain.profile.Types.*
 
 object Behaviors {
 
-  def transitions: TransitionK[EIO, C, S, S] =
+  def transitions: BehaviorsK[EIO, C, S] =
     (createProfile orElse addAddress).liftF
 
   val createProfile: StateTransition = {

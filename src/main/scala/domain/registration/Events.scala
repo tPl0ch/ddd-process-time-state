@@ -11,16 +11,16 @@ import domain.registration.Model.{ Command, Event, State }
 import domain.registration.Types.*
 
 object Events {
-  def events: TransitionK[EIO, C, S, E] = (registrationStarted orElse emailConfirmed).liftF
+  def events: OutputsK[EIO, C, S, E] = (registrationStarted orElse emailConfirmed).liftF
 
-  val registrationStarted: Transition[C, S, E, EE] = {
+  val registrationStarted: Output[C, S, E] = {
     case (c: Command.StartRegistration, _: State.PotentialCustomer) =>
-      Event.RegistrationStarted(c.id, c.email, c.token).validNec
+      Event.RegistrationStarted(c.id, c.email, c.token)
   }
 
-  val emailConfirmed: Transition[C, S, E, EE] = {
+  val emailConfirmed: Output[C, S, E] = {
     case (_: Command.ConfirmEmail, s: State.WaitingForEmailRegistration) =>
-      Event.EmailConfirmed(s.id, s.email).validNec
+      Event.EmailConfirmed(s.id, s.email)
   }
 
   private implicit val eventsError: (C, S) => EE = (c: C, s: S) => EventNotDefined(c, s)

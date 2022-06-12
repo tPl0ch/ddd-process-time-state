@@ -19,7 +19,7 @@ import domain.registration.Model.*
 import domain.registration.Types.*
 import examples.Data.*
 
-object RegistrationEventDriven extends IOApp.Simple with RegistrationRepositories[EIO] {
+object AccountRegistration extends IOApp.Simple with RegistrationRepositories[EIO] {
 
   val registration: Transducer = (command: Command) =>
     for {
@@ -27,7 +27,7 @@ object RegistrationEventDriven extends IOApp.Simple with RegistrationRepositorie
       _     <- StateT.liftF(saveEvent[EIO](event))
     } yield event
 
-  val registrationIO: EIO[List[Event]] = for {
+  val programEIO: EIO[List[Event]] = for {
     initialState <- loadState[EIO]
     (_, listOfEvents) <- registration
       .traverse(Data.Registration.commands)
@@ -35,5 +35,5 @@ object RegistrationEventDriven extends IOApp.Simple with RegistrationRepositorie
     _ <- EitherT.liftF(IO(println(listOfEvents)))
   } yield listOfEvents
 
-  override def run: IO[Unit] = registrationIO.value.as(())
+  override def run: IO[Unit] = programEIO.value.as(())
 }

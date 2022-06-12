@@ -4,6 +4,6 @@ package identity
 import Identities.UID
 
 /** This trait is a comparison type-class for a specific Aggregate ID that you have chosen. */
-trait EqualId[ID] {
-  def equals(idA: UID[ID], idB: UID[ID]): Boolean
+trait ComparesLifecycles[ID] {
+  def equals(idA: Lifecycle[ID], idB: Lifecycle[ID]): Boolean
 }

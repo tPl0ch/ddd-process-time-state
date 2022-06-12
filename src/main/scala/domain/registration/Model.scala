@@ -6,8 +6,8 @@ import java.util.UUID
 import cats.data.{ EitherT, NonEmptyChain }
 import cats.effect.IO
 
-import Lifecycle.NoId
-import identity.HasId
+import Lifecycle.NotStarted
+import identity.Lifecycle
 
 object Model {
 
@@ -15,14 +15,14 @@ object Model {
   final case class Email(value: String) extends AnyVal
   final case class Token(value: String) extends AnyVal
 
-  enum Command extends HasId[AccountId]:
+  enum Command extends Lifecycle[AccountId]:
     case StartRegistration(id: AccountId, email: Email, token: Token)
     case ConfirmEmail(id: AccountId, token: Token)
     case RestartRegistration(id: AccountId)
     case DeleteDueToGDPR(id: AccountId)
 
-  enum State extends HasId[AccountId]:
-    case PotentialCustomer(id: NoId.type = NoId)
+  enum State extends Lifecycle[AccountId]:
+    case PotentialCustomer(id: NotStarted.type = NotStarted)
     case WaitingForEmailRegistration(
         id: AccountId,
         email: Email,
@@ -31,7 +31,7 @@ object Model {
     case Active(id: AccountId, email: Email)
     case Deleted(id: AccountId)
 
-  enum Event extends HasId[AccountId]:
+  enum Event extends Lifecycle[AccountId]:
     case RegistrationStarted(id: AccountId, email: Email, token: Token)
     case EmailConfirmed(id: AccountId, email: Email)
     case GDPRDeleted(id: AccountId)

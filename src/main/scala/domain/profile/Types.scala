@@ -15,8 +15,8 @@ object Types {
   type E      = Event
   type EE     = ProfileError
 
-  type StateTransition = Transition[C, S, S, EE]
-  type EventOutput     = Transition[C, S, E, EE]
+  type StateTransition = Behavior[C, S, EE]
+  type EventOutput     = Output[C, S, E]
 
   type StateMachine = FSM[EIO, C, S]
   type Transducer   = FST[EIO, C, S, E]

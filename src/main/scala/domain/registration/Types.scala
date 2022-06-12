@@ -16,8 +16,8 @@ object Types {
   type R      = ReadModel.Model
   type EE     = RegistrationError
 
-  type StateTransition = Transition[C, S, S, EE]
-  type EventOutput     = Transition[C, S, E, EE]
+  type StateTransition = Behavior[C, S, EE]
+  type EventOutput     = Output[C, S, E]
 
   type StateMachine = FSM[EIO, C, S]
   type Transducer   = FST[EIO, C, S, E]
