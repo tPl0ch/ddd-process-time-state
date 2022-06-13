@@ -31,6 +31,4 @@ object Behaviors {
     case (_: Command.ConfirmEmail, s: State.WaitingForEmailRegistration) =>
       State.Active(s.id, s.email).validNec
   }
-
-  private implicit val transitionError: (C, S) => EE = (c: C, s: S) => TransitionNotDefined(c, s)
 }

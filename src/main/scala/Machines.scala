@@ -17,21 +17,21 @@ type FSM[F[_], -C, S] = FST[F, C, S, Unit]
 
 object Machines {
   def apply[F[_], C, S](
-      transitions: BehaviorsK[F, C, S],
+      behaviors: BehaviorsK[F, C, S],
   )(using F: MonadThrow[F], isFinal: HasEnded[S]): FSM[F, C, S] = (currentCommand: C) =>
     StateT { (currentState: S) =>
       for {
-        newState <- transitions.withLifecycleCheck((currentCommand, currentState))
+        newState <- behaviors.withLifecycleCheck((currentCommand, currentState))
       } yield (newState, ())
     }
 
-  def apply[F[_], C, S, E](transitions: BehaviorsK[F, C, S])(
-      events: OutputsK[F, C, S, E],
+  def apply[F[_], C, S, E](behaviors: BehaviorsK[F, C, S])(
+      outputs: OutputsK[F, C, S, E],
   )(using F: MonadThrow[F], isFinal: HasEnded[S]): FST[F, C, S, E] = (currentCommand: C) =>
     StateT { (currentState: S) =>
       for {
-        newState <- transitions.withLifecycleCheck((currentCommand, currentState))
-        event    <- events((currentCommand, currentState))
+        newState <- behaviors.withLifecycleCheck((currentCommand, currentState))
+        event    <- outputs((currentCommand, currentState))
       } yield (newState, event)
     }
 

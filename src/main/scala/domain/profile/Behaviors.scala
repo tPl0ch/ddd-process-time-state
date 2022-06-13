@@ -5,7 +5,7 @@ import cats.implicits.*
 import cats.syntax.validated.*
 
 import Transitions.*
-import domain.profile.Errors.{ ProfileError, TransitionNotDefined }
+import domain.profile.Errors.ProfileError
 import domain.profile.Givens.given
 import domain.profile.Model.*
 import domain.profile.Types.*
@@ -24,6 +24,4 @@ object Behaviors {
     case (command: Command.AddAddress, state: State.UncompletedProfile) =>
       State.CompletedProfile(state.id, state.accountId, command.address).validNec
   }
-
-  private implicit val transitionError: (C, S) => EE = (c: C, s: S) => TransitionNotDefined(c, s)
 }

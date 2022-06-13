@@ -5,7 +5,6 @@ import cats.syntax.validated.*
 
 import Transitions.*
 import domain.registration.Behaviors.*
-import domain.registration.Errors.EventNotDefined
 import domain.registration.Givens.given
 import domain.registration.Model.{ Command, Event, State }
 import domain.registration.Types.*
@@ -22,6 +21,4 @@ object Events {
     case (_: Command.ConfirmEmail, s: State.WaitingForEmailRegistration) =>
       Event.EmailConfirmed(s.id, s.email)
   }
-
-  private implicit val eventsError: (C, S) => EE = (c: C, s: S) => EventNotDefined(c, s)
 }

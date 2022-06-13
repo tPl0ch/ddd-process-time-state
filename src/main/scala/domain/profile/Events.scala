@@ -4,7 +4,7 @@ package domain.profile
 import cats.implicits.*
 
 import Transitions.*
-import domain.profile.Errors.{ EventNotDefined, ProfileError }
+import domain.profile.Errors.ProfileError
 import domain.profile.Givens.given
 import domain.profile.Model.*
 import domain.profile.Types.*
@@ -22,6 +22,4 @@ object Events {
     case (command: Command.AddAddress, state: State.UncompletedProfile) =>
       Event.AddressAdded(state.id, state.accountId, command.address)
   }
-
-  private implicit val eventsError: (C, S) => EE = (c: C, s: S) => EventNotDefined(c, s)
 }
