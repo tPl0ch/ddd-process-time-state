@@ -12,15 +12,15 @@ import domain.profile.Types.*
 
 object Behaviors {
 
-  def transitions: BehaviorsK[EIO, C, S] =
-    (createProfile orElse addAddress).liftF
+  def behaviors: BehaviorsK[EIO, C, S] =
+    (profileGeneration orElse addressDefinition).liftF
 
-  val createProfile: StateTransition = {
+  val profileGeneration: StateTransition = {
     case (command: Command.CreateProfile, _: State.NoProfile) =>
       State.UncompletedProfile(command.id, command.accountId).validNec
   }
 
-  val addAddress: StateTransition = {
+  val addressDefinition: StateTransition = {
     case (command: Command.AddAddress, state: State.UncompletedProfile) =>
       State.CompletedProfile(state.id, state.accountId, command.address).validNec
   }

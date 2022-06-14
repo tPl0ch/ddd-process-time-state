@@ -1,10 +1,11 @@
 package org.tp.process_time_state
 
-import cats.data.{ Kleisli, StateT }
+import cats.data.{ AndThen, IndexedState, IndexedStateT, Kleisli, StateT }
 import cats.implicits.*
-import cats.{ FlatMap, Monad, MonadThrow }
-
+import cats.{ FlatMap, Functor, Monad, MonadThrow }
 import scala.annotation.targetName
+
+import cats.arrow.Arrow
 
 import Lifecycle.*
 import Transitions.*
@@ -15,13 +16,18 @@ type FST[F[_], -C, S, E] = C => StateT[F, S, E]
 /** A Finite-State-Machine (FSM) is just a FST with a Unit Output */
 type FSM[F[_], -C, S] = FST[F, C, S, Unit]
 
+final class Transducer[F[_], C, S, E](
+    behaviorsK: BehaviorsK[F, C, S],
+    outputsK: OutputsK[F, C, S, E],
+) extends Function1[(C, S), F[(S, E)]] {}
+
 object Machines {
   def apply[F[_], C, S](
       behaviors: BehaviorsK[F, C, S],
   )(using F: MonadThrow[F], isFinal: HasEnded[S]): FSM[F, C, S] = (currentCommand: C) =>
     StateT { (currentState: S) =>
       for {
-        newState <- behaviors.withLifecycleCheck((currentCommand, currentState))
+        newState <- behaviors.onlyWhenLifecycleIsActive((currentCommand, currentState))
       } yield (newState, ())
     }
 
@@ -30,7 +36,7 @@ object Machines {
   )(using F: MonadThrow[F], isFinal: HasEnded[S]): FST[F, C, S, E] = (currentCommand: C) =>
     StateT { (currentState: S) =>
       for {
-        newState <- behaviors.withLifecycleCheck((currentCommand, currentState))
+        newState <- behaviors.onlyWhenLifecycleIsActive((currentCommand, currentState))
         event    <- outputs((currentCommand, currentState))
       } yield (newState, event)
     }

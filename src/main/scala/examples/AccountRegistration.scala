@@ -23,7 +23,7 @@ object AccountRegistration extends IOApp.Simple with RegistrationRepositories[EI
 
   val registration: Transducer = (command: Command) =>
     for {
-      event <- Machines(transitions)(events)(command)
+      event <- Machines(behaviors)(events)(command)
       _     <- StateT.liftF(saveEvent[EIO](event))
     } yield event
 
