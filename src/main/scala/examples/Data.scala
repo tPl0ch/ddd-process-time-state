@@ -3,7 +3,7 @@ package examples
 
 import java.util.UUID
 
-import domain.registration.Model.{ AccountId, Command, Email, Token }
+import domain.registration.Model.{ AccountId, Command, Email, Token, Event }
 
 object Data {
   object Registration {
@@ -13,22 +13,26 @@ object Data {
     val token: Token             = Token("token")
     val anotherToken: Token      = Token("another-token")
 
+    val startRegistration: Command = Command.StartRegistration(userId, email, token)
+    val registrationStarted: Event = Event.RegistrationStarted(userId, email, token)
+    val confirmEmail: Command      = Command.ConfirmEmail(userId, token)
+
     val commands: List[Command] =
-      List(Command.StartRegistration(userId, email, token), Command.ConfirmEmail(userId, token))
+      List(startRegistration, confirmEmail)
 
     val commandsWrongIdentity: List[Command] =
       List(
-        Command.StartRegistration(userId, email, token),
+        startRegistration,
         Command.ConfirmEmail(anotherUserId, token),
       )
 
     val commandsWrongToken: List[Command] =
       List(
-        Command.StartRegistration(userId, email, token),
+        startRegistration,
         Command.ConfirmEmail(userId, anotherToken),
       )
 
     val commandsNoTransition: List[Command] =
-      List(Command.StartRegistration(userId, email, token), Command.DeleteDueToGDPR(userId))
+      List(startRegistration, Command.DeleteDueToGDPR(userId))
   }
 }

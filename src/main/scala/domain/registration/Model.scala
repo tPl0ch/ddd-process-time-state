@@ -6,8 +6,7 @@ import java.util.UUID
 import cats.data.{ EitherT, NonEmptyChain }
 import cats.effect.IO
 
-import Lifecycle.NotStarted
-import identity.Lifecycle
+import Lifecycles.*
 
 object Model {
 

@@ -7,7 +7,7 @@ import cats.syntax.validated.*
 import scala.annotation.targetName
 
 import Invariants.*
-import Lifecycle.{ HasEnded, LifecycleHasEnded }
+import Lifecycles.{ HasEnded, LifecycleHasEnded }
 
 type Behavior[-C, S, +EE <: Error] = PartialFunction[(C, S), InvariantError[EE, S]]
 type BehaviorsK[F[_], -C, S]       = (C, S) => F[S]

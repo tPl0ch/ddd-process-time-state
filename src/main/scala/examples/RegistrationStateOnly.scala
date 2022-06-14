@@ -14,7 +14,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.*
 
 import Data.*
-import Machines.*
+import Aggregates.*
 import domain.registration.Behaviors.*
 import domain.registration.Givens.given
 import domain.registration.Model.*
@@ -26,7 +26,7 @@ object RegistrationStateOnly extends IOApp.Simple with RegistrationRepositories[
 
   val accountRegistration: StateMachine = (command: Command) =>
     for {
-      currentState <- Machines(behaviors)(command).get
+      currentState <- Aggregates(behaviors)(command).get
       _            <- StateT.liftF(saveState[EIO](currentState))
     } yield ()
 

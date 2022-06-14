@@ -1,9 +1,10 @@
 package org.tp.process_time_state
 package domain.registration
 
-import Lifecycle.{ HasEnded, NotStarted }
+import cats.Monoid
+
+import Lifecycles.*
 import domain.registration.Model.{ AccountId, State }
-import identity.{ ComparesLifecycles, Lifecycle }
 
 object Givens {
   given isFinalState: HasEnded[State] with

@@ -2,19 +2,19 @@ package org.tp.process_time_state
 
 import cats.data.{ IndexedState, IndexedStateT, Kleisli, StateT }
 import cats.implicits.*
-import cats.{ FlatMap, Functor, Monad, MonadThrow }
+import cats.{ Applicative, FlatMap, Functor, Monad, MonadThrow, Monoid }
 import scala.annotation.targetName
 
-import Lifecycle.*
+import Lifecycles.*
 import Transitions.*
 
 /** A Finite-State-Transducer (FST) is a function of an Input to StateF */
-type FST[F[_], -C, S, E] = C => StateT[F, S, E]
+type FST[F[_], -C, S, E] = C => IndexedStateT[F, S, S, E]
 
 /** A Finite-State-Machine (FSM) is just a FST with a Unit Output */
 type FSM[F[_], -C, S] = FST[F, C, S, Unit]
 
-object Machines {
+object Aggregates {
   def apply[F[_], C, S](
       behaviors: BehaviorsK[F, C, S],
   )(using F: MonadThrow[F], isFinal: HasEnded[S]): FSM[F, C, S] = (currentCommand: C) =>
@@ -33,6 +33,10 @@ object Machines {
         event    <- outputs(currentCommand, currentState)
       } yield (newState, event)
     }
+
+  def reconstituteState[F[_], S, E](events: List[E])(f: (E, S) => S)(snapshot: S)(using
+      F: Applicative[F],
+  ): F[S] = events.foldLeft(F.pure(snapshot))((fs, e) => F.map(fs)(s => f(e, s)))
 
   extension [F[_], C, S, E](transducer: FST[F, C, S, E])
     def run(command: C)(state: S)(using F: FlatMap[F]): F[E] =

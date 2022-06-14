@@ -10,15 +10,16 @@ import cats.effect.{ IO, IOApp }
 import cats.implicits.*
 import cats.syntax.either.*
 
-import Machines.*
-import domain.registration.Imports.{ *, given }
+import Aggregates.*
+import domain.registration.Types.*
+import domain.registration.ReadModel.*
 import examples.Data.*
 
 object ReadModelProjection extends IOApp.Simple with RegistrationRepositories[EIO] {
 
-  val projection: Projection = (c: Command) =>
+  val projection: Projection = (c: C) =>
     for {
-      readModel <- AccountRegistration.registration(c).map(project)
+      readModel <- AccountRegistration.aggregate(c).map(project)
       _         <- StateT.liftF(saveReadModel[EIO](readModel))
     } yield readModel
 
