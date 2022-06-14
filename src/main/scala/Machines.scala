@@ -1,11 +1,10 @@
 package org.tp.process_time_state
 
-import cats.data.{ AndThen, IndexedState, IndexedStateT, Kleisli, StateT }
+import cats.data.{ Kleisli, StateT }
 import cats.implicits.*
-import cats.{ FlatMap, Functor, Monad, MonadThrow }
-import scala.annotation.targetName
+import cats.{ FlatMap, Monad, MonadThrow }
 
-import cats.arrow.Arrow
+import scala.annotation.targetName
 
 import Lifecycle.*
 import Transitions.*
@@ -15,11 +14,6 @@ type FST[F[_], -C, S, E] = C => StateT[F, S, E]
 
 /** A Finite-State-Machine (FSM) is just a FST with a Unit Output */
 type FSM[F[_], -C, S] = FST[F, C, S, Unit]
-
-final class Transducer[F[_], C, S, E](
-    behaviorsK: BehaviorsK[F, C, S],
-    outputsK: OutputsK[F, C, S, E],
-) extends Function1[(C, S), F[(S, E)]] {}
 
 object Machines {
   def apply[F[_], C, S](

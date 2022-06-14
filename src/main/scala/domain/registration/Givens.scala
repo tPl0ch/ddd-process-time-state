@@ -12,8 +12,8 @@ object Givens {
       case _               => false
 
   given compareAccounts: ComparesLifecycles[AccountId] with
-    override def equals(idA: Lifecycle[AccountId], idB: Lifecycle[AccountId]): Boolean =
-      (idA.id, idB.id) match
+    override def equals(accountA: Lifecycle[AccountId], accountB: Lifecycle[AccountId]): Boolean =
+      (accountA.id, accountB.id) match
         case (a: AccountId, b: AccountId) => a.id.equals(b.id)
         case (_: NotStarted.type, _)      => false // Commands should always have an identity
         case (_, _: NotStarted.type)      => true  // If there is a pre-genesis state, allow

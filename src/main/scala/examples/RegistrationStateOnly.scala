@@ -26,7 +26,7 @@ object RegistrationStateOnly extends IOApp.Simple with RegistrationRepositories[
 
   val accountRegistration: StateMachine = (command: Command) =>
     for {
-      currentState <- Machines(transitions)(command).get
+      currentState <- Machines(behaviors)(command).get
       _            <- StateT.liftF(saveState[EIO](currentState))
     } yield ()
 

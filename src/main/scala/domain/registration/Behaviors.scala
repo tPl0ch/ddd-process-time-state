@@ -14,10 +14,10 @@ import domain.registration.Types.*
 
 object Behaviors {
 
-  def transitions: BehaviorsK[EIO, C, S] = ((startRegistration orElse
+  def behaviors: BehaviorsK[EIO, C, S] = ((registration orElse
     (emailConfirmation << tokensMustMatch)) << identitiesMustMatch).liftF
 
-  val startRegistration: Behavior[C, S, EE] = {
+  val registration: Behavior[C, S, EE] = {
     case (c: Command.StartRegistration, _: State.PotentialCustomer) =>
       State.WaitingForEmailRegistration(c.id, c.email, c.token).validNec
   }

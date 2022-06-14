@@ -30,7 +30,7 @@ object Transitions {
   }
 
   extension [F[_], C, S](behaviors: BehaviorsK[F, C, S])
-    def withLifecycleCheck(using
+    def onlyWhenLifecycleIsActive(using
         F: ApplicativeThrow[F],
         isFinal: HasEnded[S],
     ): BehaviorsK[F, C, S] =
