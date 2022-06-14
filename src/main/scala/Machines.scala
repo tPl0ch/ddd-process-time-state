@@ -1,9 +1,8 @@
 package org.tp.process_time_state
 
-import cats.data.{ Kleisli, StateT }
+import cats.data.{ IndexedState, IndexedStateT, Kleisli, StateT }
 import cats.implicits.*
-import cats.{ FlatMap, Monad, MonadThrow }
-
+import cats.{ FlatMap, Functor, Monad, MonadThrow }
 import scala.annotation.targetName
 
 import Lifecycle.*
@@ -21,7 +20,7 @@ object Machines {
   )(using F: MonadThrow[F], isFinal: HasEnded[S]): FSM[F, C, S] = (currentCommand: C) =>
     StateT { (currentState: S) =>
       for {
-        newState <- behaviors.onlyWhenLifecycleIsActive((currentCommand, currentState))
+        newState <- behaviors.onlyWhenLifecycleIsActive(currentCommand, currentState)
       } yield (newState, ())
     }
 
@@ -30,8 +29,8 @@ object Machines {
   )(using F: MonadThrow[F], isFinal: HasEnded[S]): FST[F, C, S, E] = (currentCommand: C) =>
     StateT { (currentState: S) =>
       for {
-        newState <- behaviors.onlyWhenLifecycleIsActive((currentCommand, currentState))
-        event    <- outputs((currentCommand, currentState))
+        newState <- behaviors.onlyWhenLifecycleIsActive(currentCommand, currentState)
+        event    <- outputs(currentCommand, currentState)
       } yield (newState, event)
     }
 

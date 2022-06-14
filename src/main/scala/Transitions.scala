@@ -9,13 +9,11 @@ import scala.annotation.targetName
 import Invariants.*
 import Lifecycle.{ HasEnded, LifecycleHasEnded }
 
-type TransitionsK[F[_], -C, -S, E] = Kleisli[F, (C, S), E]
-
 type Behavior[-C, S, +EE <: Error] = PartialFunction[(C, S), InvariantError[EE, S]]
-type BehaviorsK[F[_], -C, S]       = TransitionsK[F, C, S, S]
+type BehaviorsK[F[_], -C, S]       = (C, S) => F[S]
 
 type Output[-C, S, +E]         = PartialFunction[(C, S), E]
-type OutputsK[F[_], -C, -S, E] = TransitionsK[F, C, S, E]
+type OutputsK[F[_], -C, -S, E] = (C, S) => F[E]
 
 object Transitions {
 
@@ -34,10 +32,9 @@ object Transitions {
         F: ApplicativeThrow[F],
         isFinal: HasEnded[S],
     ): BehaviorsK[F, C, S] =
-      Kleisli { (c: C, s: S) =>
-        if !isFinal(s) then behaviors((c, s))
+      (c: C, s: S) =>
+        if !isFinal(s) then behaviors(c, s)
         else F.raiseError(LifecycleHasEnded(c, s))
-      }
 
   extension [C, S, EE <: Error](behavior: Behavior[C, S, EE])
 
@@ -67,20 +64,18 @@ object Transitions {
     def liftF[F[_]](using
         F: ApplicativeError[F, NonEmptyChain[EE]],
     ): BehaviorsK[F, C, S] =
-      Kleisli { (c: C, s: S) =>
+      (c: C, s: S) =>
         if !behavior.isDefinedAt((c, s)) then
           F.raiseError(NonEmptyChain.one(BehaviorIsNotDefined(c, s).asInstanceOf[EE]))
         else behavior((c, s)).fold(F.raiseError, F.pure)
-      }
 
   extension [C, S, E](output: Output[C, S, E])
     @targetName("liftOut")
     def liftF[F[_], EE <: Error](using
         F: ApplicativeError[F, NonEmptyChain[EE]],
     ): OutputsK[F, C, S, E] =
-      Kleisli { (c: C, s: S) =>
+      (c: C, s: S) =>
         if !output.isDefinedAt((c, s)) then
           F.raiseError(NonEmptyChain.one(OutputIsNotDefined(c, s).asInstanceOf[EE]))
         else F.pure(output((c, s)))
-      }
 }
