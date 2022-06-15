@@ -29,10 +29,8 @@ object AccountRegistration extends IOApp.Simple with RegistrationRepositories[EI
 
   val programEIO: EIO[List[Event]] = for {
     initialState <- loadState[EIO]
-    (_, listOfEvents) <- aggregate
-      .traverse(Data.Registration.commands)
-      .run(initialState)
-    _ <- EitherT.liftF(IO(println(listOfEvents)))
+    listOfEvents <- aggregate.runAllEvents(Data.Registration.commands)(initialState)
+    _            <- EitherT.liftF(IO(println(listOfEvents)))
   } yield listOfEvents
 
   override def run: IO[Unit] = programEIO.value.as(())

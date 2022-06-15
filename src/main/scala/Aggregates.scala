@@ -1,6 +1,6 @@
 package org.tp.process_time_state
 
-import cats.data.{ IndexedState, IndexedStateT, Kleisli, StateT }
+import cats.data.{ IndexedState, IndexedStateT, Kleisli, NonEmptyChain, StateT }
 import cats.implicits.*
 import cats.{ Applicative, FlatMap, Functor, Monad, MonadThrow, Monoid }
 import scala.annotation.targetName
@@ -8,50 +8,50 @@ import scala.annotation.targetName
 import Lifecycles.*
 import Transitions.*
 
-/** A Finite-State-Transducer (FST) is a function of an Input to StateF */
+/** A Finite-State-Transducer (FST) is a function of a Command to StateF */
 type FST[F[_], -C, S, E] = C => IndexedStateT[F, S, S, E]
 
 /** A Finite-State-Machine (FSM) is just a FST with a Unit Output */
 type FSM[F[_], -C, S] = FST[F, C, S, Unit]
 
 object Aggregates {
-  def apply[F[_], C, S](
-      behaviors: BehaviorsK[F, C, S],
-  )(using F: MonadThrow[F], isFinal: HasEnded[S]): FSM[F, C, S] = (currentCommand: C) =>
-    StateT { (currentState: S) =>
-      for {
-        newState <- behaviors.onlyWhenLifecycleIsActive(currentCommand, currentState)
-      } yield (newState, ())
-    }
+  def apply[F[_], C, S, EE <: Error](behaviors: BehaviorsK[F, C, S])(using Monad[F]): FSM[F, C, S] =
+    (currentCommand: C) =>
+      StateT { (currentState: S) =>
+        for {
+          newState <- behaviors(currentCommand, currentState)
+        } yield (newState, ())
+      }
 
-  def apply[F[_], C, S, E](behaviors: BehaviorsK[F, C, S])(
-      outputs: OutputsK[F, C, S, E],
-  )(using F: MonadThrow[F], isFinal: HasEnded[S]): FST[F, C, S, E] = (currentCommand: C) =>
+  def apply[F[_], C, S, E](
+      behaviors: BehaviorsK[F, C, S],
+  )(outputs: OutputsK[F, C, S, E])(using Monad[F]): FST[F, C, S, E] = (currentCommand: C) =>
     StateT { (currentState: S) =>
       for {
-        newState <- behaviors.onlyWhenLifecycleIsActive(currentCommand, currentState)
+        newState <- behaviors(currentCommand, currentState)
         event    <- outputs(currentCommand, currentState)
       } yield (newState, event)
     }
 
-  def reconstituteState[F[_], S, E](events: List[E])(f: (E, S) => S)(snapshot: S)(using
-      F: Applicative[F],
-  ): F[S] = events.foldLeft(F.pure(snapshot))((fs, e) => F.map(fs)(s => f(e, s)))
+  extension [F[_], C, S, E](aggregate: FST[F, C, S, E])
+    def run(command: C)(state: S)(using F: FlatMap[F]): F[(S, E)] = aggregate(command).run(state)
+    def runEvent(command: C)(state: S)(using F: FlatMap[F]): F[E] = aggregate(command).runA(state)
+    def runState(command: C)(state: S)(using F: FlatMap[F]): F[S] = aggregate(command).runS(state)
 
-  extension [F[_], C, S, E](transducer: FST[F, C, S, E])
-    def run(command: C)(state: S)(using F: FlatMap[F]): F[E] =
-      F.map(transducer(command).run(state))((_, e) => e)
+    def runAll(commands: List[C])(state: S)(using F: Monad[F]): F[(S, List[E])] =
+      aggregate.traverse(commands).run(state)
 
-    def runAll(commands: List[C])(state: S)(using F: Monad[F]): F[List[E]] =
-      for {
-        (_, acc) <- transducer.traverse(commands).run(state)
-      } yield acc
+    def runAllEvents(commands: List[C])(state: S)(using F: Monad[F]): F[List[E]] =
+      aggregate.traverse(commands).runA(state)
 
-    def traverse(commands: List[C])(using F: Monad[F]): StateT[F, S, List[E]] =
+    def runAllState(commands: List[C])(state: S)(using F: Monad[F]): F[S] =
+      aggregate.traverse(commands).runS(state)
+
+    private def traverse(commands: List[C])(using F: Monad[F]): StateT[F, S, List[E]] =
       commands.foldLeft(StateT.liftF(F.pure(Nil: List[E]))) { (stateT, command) =>
         for {
           acc   <- stateT
-          event <- transducer(command)
+          event <- aggregate(command)
         } yield acc.appended(event)
       }
 }

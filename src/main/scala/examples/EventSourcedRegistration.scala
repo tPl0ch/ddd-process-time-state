@@ -11,11 +11,12 @@ import cats.implicits.*
 import cats.syntax.either.*
 
 import Aggregates.*
+import EventSourcing.*
 import domain.registration.Model.*
 import domain.registration.Types.*
 import examples.Data.*
 
-object EventSourcing extends IOApp.Simple with RegistrationRepositories[EIO] {
+object EventSourcedRegistration extends IOApp.Simple with RegistrationRepositories[EIO] {
 
   val reconstitution: (E, S) => S = { case (e, s) =>
     (e, s) match
@@ -26,8 +27,7 @@ object EventSourcing extends IOApp.Simple with RegistrationRepositories[EIO] {
   val eventSourcingIO: EIO[E] = for {
     snapshot       <- loadState[EIO]
     previousEvents <- loadEventStream[EIO]
-    sourcedState <- Aggregates
-      .reconstituteState[EIO, S, E](previousEvents)(reconstitution)(snapshot)
+    sourcedState   <- reconstituteState[EIO, S, E](reconstitution)(snapshot)(previousEvents)
     newEvent <- AccountRegistration
       .aggregate(Data.Registration.confirmEmail)
       .runA(sourcedState)

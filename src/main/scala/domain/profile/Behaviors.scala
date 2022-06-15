@@ -13,7 +13,7 @@ import domain.profile.Types.*
 object Behaviors {
 
   def behaviors: BehaviorsK[EIO, C, S] =
-    (profileGeneration orElse addressDefinition).liftF
+    (profileGeneration orElse addressDefinition).liftLifecycleF
 
   val profileGeneration: StateTransition = {
     case (command: Command.CreateProfile, _: State.NoProfile) =>

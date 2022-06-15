@@ -27,14 +27,14 @@ object Transitions {
     override def msg: String = s"Event for input label ($c, $s) is not defined."
   }
 
-  extension [F[_], C, S](behaviors: BehaviorsK[F, C, S])
-    def onlyWhenLifecycleIsActive(using
-        F: ApplicativeThrow[F],
+  extension [F[_], C, S, EE <: Error](behaviors: BehaviorsK[F, C, S])
+    private def onlyWhenLifecycleIsActive(using
+        F: ApplicativeError[F, NonEmptyChain[EE]],
         isFinal: HasEnded[S],
     ): BehaviorsK[F, C, S] =
       (c: C, s: S) =>
         if !isFinal(s) then behaviors(c, s)
-        else F.raiseError(LifecycleHasEnded(c, s))
+        else F.raiseError(NonEmptyChain.one(LifecycleHasEnded(c, s).asInstanceOf[EE]))
 
   extension [C, S, EE <: Error](behavior: Behavior[C, S, EE])
 
@@ -68,6 +68,11 @@ object Transitions {
         if !behavior.isDefinedAt((c, s)) then
           F.raiseError(NonEmptyChain.one(BehaviorIsNotDefined(c, s).asInstanceOf[EE]))
         else behavior((c, s)).fold(F.raiseError, F.pure)
+
+    def liftLifecycleF[F[_]](using
+        F: ApplicativeError[F, NonEmptyChain[EE]],
+        isFinal: HasEnded[S],
+    ): BehaviorsK[F, C, S] = behavior.liftF.onlyWhenLifecycleIsActive
 
   extension [C, S, E](output: Output[C, S, E])
     @targetName("liftOut")

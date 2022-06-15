@@ -15,7 +15,7 @@ import domain.registration.Types.*
 object Behaviors {
 
   def behaviors: BehaviorsK[EIO, C, S] = ((registration orElse
-    (emailConfirmation << tokensMustMatch)) << identitiesMustMatch).liftF
+    (emailConfirmation << tokensMustMatch)) << identitiesMustMatch).liftLifecycleF
 
   val registration: Behavior[C, S, EE] = {
     case (c: Command.StartRegistration, _: State.PotentialCustomer) =>

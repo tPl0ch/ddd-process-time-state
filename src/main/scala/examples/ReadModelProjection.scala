@@ -25,10 +25,8 @@ object ReadModelProjection extends IOApp.Simple with RegistrationRepositories[EI
 
   val projectionIO: EIO[List[R]] = for {
     initialState <- loadState[EIO]
-    (_, readModels) <- projection
-      .traverse(Data.Registration.commands)
-      .run(initialState)
-    _ <- EitherT(IO(println(readModels).asRight))
+    readModels   <- projection.runAllEvents(Data.Registration.commands)(initialState)
+    _            <- EitherT(IO(println(readModels).asRight))
   } yield readModels
 
   override def run: IO[Unit] = projectionIO.value.as(())

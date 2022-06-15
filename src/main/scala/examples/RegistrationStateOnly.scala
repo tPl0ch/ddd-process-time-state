@@ -32,11 +32,9 @@ object RegistrationStateOnly extends IOApp.Simple with RegistrationRepositories[
 
   val accountRegistrationIO: EIO[Unit] =
     for {
-      initialState <- loadState[EIO]
-      (currentState, _) <- accountRegistration
-        .traverse(Registration.commands)
-        .run(initialState)
-      _ <- EitherT(IO(println(currentState).asRight))
+      initialState      <- loadState[EIO]
+      (currentState, _) <- accountRegistration.runAll(Registration.commands)(initialState)
+      _                 <- EitherT(IO(println(currentState).asRight))
     } yield ()
 
   override def run: IO[Unit] = accountRegistrationIO.value.as(())
