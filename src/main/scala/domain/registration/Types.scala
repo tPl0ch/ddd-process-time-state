@@ -4,8 +4,8 @@ package domain.registration
 import cats.data.{ EitherT, NonEmptyChain }
 import cats.effect.IO
 
-import domain.registration.Errors.RegistrationError
-import domain.registration.Model.{ AccountId, Command, Event, State }
+import Errors.RegistrationError
+import Model.{ AccountId, Command, Event, State }
 
 object Types {
   type EIO[A] = EitherT[IO, NonEmptyChain[RegistrationError], A]

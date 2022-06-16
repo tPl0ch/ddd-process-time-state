@@ -6,7 +6,7 @@ case object NotStarted
 /** The UID[ID] type represents a Union of the Aggregate's concrete ID type and the PreGenesis
   * state.
   */
-type UID[ID] = ID | NotStarted.type
+final type UID[ID] = ID | NotStarted.type
 
 /** A function that determines if a certain state is a final state. */
 final type HasEnded[S] = S => Boolean

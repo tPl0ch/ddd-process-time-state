@@ -1,8 +1,8 @@
 package org.tp.process_time_state
 package domain.registration
 
-import domain.registration.Model.*
-import domain.registration.Types.ID
+import Model.*
+import Types.ID
 
 object ReadModel {
   enum Account:

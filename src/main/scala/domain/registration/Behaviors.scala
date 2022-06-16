@@ -1,14 +1,12 @@
 package org.tp.process_time_state
 package domain.registration
 
-import cats.data.{ EitherT, NonEmptyChain }
-import cats.effect.IO
 import cats.implicits.*
 
-import domain.registration.Errors.*
-import domain.registration.Givens.given
-import domain.registration.Model.*
-import domain.registration.Types.*
+import Errors.*
+import Givens.given
+import Model.*
+import Types.*
 
 object Behaviors {
 

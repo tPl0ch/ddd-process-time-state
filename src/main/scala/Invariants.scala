@@ -30,6 +30,6 @@ extension [C, S, EE <: Error](invariant: Invariant[C, S, EE])
   * @param otherId
   *   The rhs ID.
   */
-case class IdentitiesDoNotMatch[ID](thisId: UID[ID], otherId: UID[ID]) extends Error {
+final case class IdentitiesDoNotMatch[ID](thisId: UID[ID], otherId: UID[ID]) extends Error {
   override def msg: String = s"Identities $thisId and $otherId do not match"
 }

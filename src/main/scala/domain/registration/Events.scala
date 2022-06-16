@@ -1,10 +1,10 @@
 package org.tp.process_time_state
 package domain.registration
 
-import domain.registration.Behaviors.*
-import domain.registration.Givens.given
-import domain.registration.Model.{ Command, Event, State }
-import domain.registration.Types.*
+import Behaviors.*
+import Givens.given
+import Model.{ Command, Event, State }
+import Types.*
 
 object Events {
   def events: OutputsK[EIO, C, S, E] = (registrationStarted orElse emailConfirmed).liftF

@@ -3,10 +3,9 @@ package domain.profile
 
 import cats.implicits.*
 
-import domain.profile.Errors.ProfileError
-import domain.profile.Givens.given
-import domain.profile.Model.*
-import domain.profile.Types.*
+import Givens.given
+import Model.*
+import Types.*
 
 object Events {
 

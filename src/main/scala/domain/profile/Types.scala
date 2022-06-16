@@ -4,8 +4,8 @@ package domain.profile
 import cats.data.{ EitherT, NonEmptyChain }
 import cats.effect.IO
 
-import domain.profile.Errors.ProfileError
-import domain.profile.Model.*
+import Errors.ProfileError
+import Model.*
 
 object Types {
   type EIO[A] = EitherT[IO, NonEmptyChain[ProfileError], A]

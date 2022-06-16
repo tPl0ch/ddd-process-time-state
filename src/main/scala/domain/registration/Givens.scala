@@ -3,8 +3,8 @@ package domain.registration
 
 import cats.kernel.Eq
 
-import domain.registration.Model.State
-import domain.registration.Types.*
+import Model.State
+import Types.*
 
 object Givens {
   given isFinalState: HasEnded[S] with

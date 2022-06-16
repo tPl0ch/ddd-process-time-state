@@ -5,13 +5,13 @@ import scala.annotation.targetName
 import cats.data.NonEmptyChain
 import cats.implicits.*
 import cats.syntax.validated.*
-import cats.{ ApplicativeError, ApplicativeThrow }
+import cats.ApplicativeError
 
-type Behavior[-C, S, +EE <: Error] = PartialFunction[(C, S), InvariantError[EE, S]]
-type BehaviorsK[F[_], -C, S]       = (C, S) => F[S]
+final type Behavior[-C, S, +EE <: Error] = PartialFunction[(C, S), InvariantError[EE, S]]
+final type BehaviorsK[F[_], -C, S]       = (C, S) => F[S]
 
-type Output[-C, S, +E]         = PartialFunction[(C, S), E]
-type OutputsK[F[_], -C, -S, E] = (C, S) => F[E]
+final type Output[-C, S, +E]         = PartialFunction[(C, S), E]
+final type OutputsK[F[_], -C, -S, E] = (C, S) => F[E]
 
 extension [F[_], C, S, EE <: Error](behaviors: BehaviorsK[F, C, S])
   private def onlyWhenLifecycleIsActive(using
