@@ -12,12 +12,12 @@ import domain.registration.Types.*
 object Events {
   def events: OutputsK[EIO, C, S, E] = (registrationStarted orElse emailConfirmed).liftF
 
-  val registrationStarted: Output[C, S, E] = {
+  val registrationStarted: RegistrationOutput = {
     case (c: Command.StartRegistration, _: State.PotentialCustomer) =>
       Event.RegistrationStarted(c.id, c.email, c.token)
   }
 
-  val emailConfirmed: Output[C, S, E] = {
+  val emailConfirmed: RegistrationOutput = {
     case (_: Command.ConfirmEmail, s: State.WaitingForEmailRegistration) =>
       Event.EmailConfirmed(s.id, s.email)
   }

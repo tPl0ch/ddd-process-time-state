@@ -1,41 +1,37 @@
 package org.tp.process_time_state
 package examples
 
-import cats.Applicative
-import cats.data.{ EitherT, NonEmptyChain, StateT }
-import cats.effect.implicits.*
+import cats.data.StateT
 import cats.effect.{ IO, IOApp }
 import cats.implicits.*
-import cats.instances.either.*
-import cats.syntax.either.*
 
-import java.util.UUID
-import scala.concurrent.Await
-import scala.concurrent.duration.*
-
-import Data.*
-import Aggregates.*
-import domain.registration.Behaviors.*
+import Lifecycle.NotStarted
 import domain.registration.Givens.given
-import domain.registration.Model.*
+import domain.registration.Machines.*
 import domain.registration.Types.*
+import examples.Data.*
 
 /** This example shows how to use a simple state machine to produce and store a state within an IO.
   */
 object RegistrationStateOnly extends IOApp.Simple with RegistrationRepositories[EIO] {
 
-  val accountRegistration: StateMachine = (command: Command) =>
+  val stateStoringRegistration: StateMachine = command =>
     for {
-      currentState <- Aggregates(behaviors)(command).get
-      _            <- StateT.liftF(saveState[EIO](currentState))
+      newState <- registrationStateMachine(command).get
+      _        <- StateT.liftF(saveState[EIO](newState))
     } yield ()
 
-  val accountRegistrationIO: EIO[Unit] =
+  val accountRegistrationIO: (UID[ID], Seq[C]) => EIO[S] = (uid, commands) =>
     for {
-      initialState      <- loadState[EIO]
-      (currentState, _) <- accountRegistration.runAll(Registration.commands)(initialState)
-      _                 <- EitherT(IO(println(currentState).asRight))
-    } yield ()
+      initialState <- loadState[EIO](uid)
+      currentState <- stateStoringRegistration.runAllState(commands)(
+        initialState,
+      )
+    } yield currentState
 
-  override def run: IO[Unit] = accountRegistrationIO.value.as(())
+  override def run: IO[Unit] =
+    accountRegistrationIO(
+      NotStarted,
+      Registration.commands,
+    ).value.flatMap(IO.println(_))
 }

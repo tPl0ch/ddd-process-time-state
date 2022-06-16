@@ -1,33 +1,39 @@
 package org.tp.process_time_state
 package examples
 
-import java.util.UUID
-import scala.concurrent.Await
-import scala.concurrent.duration.*
-
-import cats.data.{ EitherT, StateT }
+import cats.data.StateT
 import cats.effect.{ IO, IOApp }
 import cats.implicits.*
-import cats.syntax.either.*
 
-import Aggregates.*
+import Data.*
+import Lifecycle.NotStarted
+import domain.registration.Machines.*
+import domain.registration.Model.Event.*
+import domain.registration.ReadModel.Account.*
 import domain.registration.Types.*
-import domain.registration.ReadModel.*
-import examples.Data.*
 
 object ReadModelProjection extends IOApp.Simple with RegistrationRepositories[EIO] {
 
+  def project: E => R = (ev: E) =>
+    ev match
+      case e: RegistrationStarted => Current(e.id, e.email, Some(e.token))
+      case e: EmailConfirmed      => Current(e.id, e.email, None)
+      case e: GDPRDeleted         => Deleted(e.id)
+
   val projection: Projection = (c: C) =>
     for {
-      readModel <- AccountRegistration.aggregate(c).map(project)
+      readModel <- registrationTransducer(c).map(project)
       _         <- StateT.liftF(saveReadModel[EIO](readModel))
     } yield readModel
 
-  val projectionIO: EIO[List[R]] = for {
-    initialState <- loadState[EIO]
-    readModels   <- projection.runAllEvents(Data.Registration.commands)(initialState)
-    _            <- EitherT(IO(println(readModels).asRight))
-  } yield readModels
+  val projectionIO: (UID[ID], Seq[C]) => EIO[Seq[R]] = (uid, commands) =>
+    for {
+      initialState <- loadState[EIO](uid)
+      readModels   <- projection.runAllEvents(commands)(initialState)
+    } yield readModels
 
-  override def run: IO[Unit] = projectionIO.value.as(())
+  override def run: IO[Unit] = projectionIO(
+    NotStarted,
+    Data.Registration.commands,
+  ).value.flatMap(e => IO.println(e.map(_.toList)))
 }

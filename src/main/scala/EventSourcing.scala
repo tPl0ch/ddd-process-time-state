@@ -6,7 +6,7 @@ import cats.data.NonEmptyChain
 object EventSourcing {
   def reconstituteState[F[_], S, E, EE <: Error](
       f: (E, S) => InvariantError[EE, S],
-  )(snapshot: S)(events: List[E])(using
+  )(snapshot: S)(events: Seq[E])(using
       M: MonadError[F, NonEmptyChain[EE]],
   ): F[S] =
     events.foldLeft(M.pure(snapshot))((fs, e) =>

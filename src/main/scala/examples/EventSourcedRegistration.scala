@@ -1,18 +1,14 @@
 package org.tp.process_time_state
 package examples
 
-import java.util.UUID
-import scala.concurrent.Await
-import scala.concurrent.duration.*
-
-import cats.data.{ EitherT, NonEmptyChain, StateT }
+import cats.data.StateT
 import cats.effect.{ IO, IOApp }
 import cats.implicits.*
-import cats.syntax.either.*
 import cats.syntax.validated.*
 
-import Aggregates.*
 import EventSourcing.*
+import Lifecycle.NotStarted
+import domain.registration.Machines.*
 import domain.registration.Model.*
 import domain.registration.Types.*
 import examples.Data.*
@@ -26,16 +22,23 @@ object EventSourcedRegistration extends IOApp.Simple with RegistrationRepositori
       case _ => CannotReconstituteFrom(e, s).asInstanceOf[EE].invalidNec
   }
 
-  val eventSourcingIO: EIO[Unit] = for {
-    snapshot       <- loadState[EIO]
-    previousEvents <- loadEventStream[EIO]
-    sourcedState   <- reconstituteState[EIO, S, E, EE](reconstitution)(snapshot)(previousEvents)
-    newEvent <- AccountRegistration
-      .aggregate(Data.Registration.confirmEmail)
-      .runA(sourcedState)
-    _ <- saveEvent[EIO](newEvent)
-    _ <- EitherT(IO(println(newEvent).asRight))
-  } yield ()
+  val eventStoringAggregate: Transducer = command =>
+    for {
+      newEvent <- registrationTransducer(command)
+      _        <- StateT.liftF(saveEvent[EIO](newEvent))
+    } yield newEvent
 
-  override def run: IO[Unit] = eventSourcingIO.value.as(())
+  val eventSourcingIO: (UID[ID], Seq[C]) => EIO[Seq[E]] = (uid, commands) =>
+    for {
+      snapshot     <- loadState[EIO](uid)
+      events       <- loadEventStream[EIO](uid)
+      sourcedState <- reconstituteState[EIO, S, E, EE](reconstitution)(snapshot)(events)
+      newEvents    <- eventStoringAggregate.runAllEvents(commands)(sourcedState)
+    } yield newEvents
+
+  override def run: IO[Unit] =
+    eventSourcingIO(
+      Registration.accountId,
+      Seq(Registration.confirmEmail),
+    ).value.flatMap(e => IO.println(e.map(_.toList)))
 }

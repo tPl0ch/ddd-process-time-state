@@ -1,22 +1,24 @@
 package org.tp.process_time_state
 package domain.profile
 
-import Identities.*
-import Lifecycles.*
+import cats.kernel.Eq
+
+import Lifecycle.*
 import domain.profile.Errors.*
 import domain.profile.Model.*
 import domain.profile.Types.*
+import domain.registration.Model.AccountId
 
 object Givens {
-  given isFinalState: Lifecycles.HasEnded[S] with
+  given isFinalState: HasEnded[S] with
     override def apply(s: S): Boolean = s match
       case _: State.DeletedProfile => true
       case _                       => false
 
-  given accountIdEquals: ComparesLifecycles[ID] with
-    override def equals(idA: Lifecycle[ID], idB: Lifecycle[ID]): Boolean =
-      (idA.id, idB.id) match
-        case (a: ProfileId, b: ProfileId)       => a.id.equals(b.id)
-        case (_: Lifecycles.NotStarted.type, _) => false // Commands should always have an identity
-        case (_, _: Lifecycles.NotStarted.type) => true  // If there is a pre-genesis state, allow
+  given accountIdEquals: Eq[Lifecycle[ProfileId]] with
+    override def eqv(x: Lifecycle[ProfileId], y: Lifecycle[ProfileId]): Boolean =
+      (x.id, y.id) match
+        case (a: ProfileId, b: ProfileId)      => a.id.equals(b.id)
+        case (_: Lifecycle.NotStarted.type, _) => false // Commands should always have an identity
+        case (_, _: Lifecycle.NotStarted.type) => true  // If there is a pre-genesis state, allow
 }

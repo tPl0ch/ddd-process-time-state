@@ -5,7 +5,7 @@ import cats.data.{ EitherT, NonEmptyChain }
 import cats.effect.IO
 import cats.implicits.*
 
-import Identities.identitiesMustMatch
+import Invariants.*
 import Transitions.*
 import domain.registration.Errors.*
 import domain.registration.Givens.given
@@ -17,17 +17,17 @@ object Behaviors {
   def behaviors: BehaviorsK[EIO, C, S] = ((registration orElse
     (emailConfirmation << tokensMustMatch)) << identitiesMustMatch).liftLifecycleF
 
-  val registration: Behavior[C, S, EE] = {
+  val registration: RegistrationBehavior = {
     case (c: Command.StartRegistration, _: State.PotentialCustomer) =>
       State.WaitingForEmailRegistration(c.id, c.email, c.token).validNec
   }
 
-  val tokensMustMatch: Invariant[C, S, EE] = {
+  val tokensMustMatch: RegistrationInvariant = {
     case (c: Command.ConfirmEmail, s: State.WaitingForEmailRegistration) =>
       if c.token.value != s.token.value then InvalidToken(c.token).invalidNec else ().validNec
   }
 
-  val emailConfirmation: Behavior[C, S, EE] = {
+  val emailConfirmation: RegistrationBehavior = {
     case (_: Command.ConfirmEmail, s: State.WaitingForEmailRegistration) =>
       State.Active(s.id, s.email).validNec
   }

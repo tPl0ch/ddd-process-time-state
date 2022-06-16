@@ -3,36 +3,39 @@ package examples
 
 import java.util.UUID
 
-import domain.registration.Model.{ AccountId, Command, Email, Token, Event }
+import domain.registration.Behaviors.*
+import domain.registration.Events.*
+import domain.registration.Model.*
+import domain.registration.Types.*
 
 object Data {
   object Registration {
-    val userId: AccountId        = AccountId(UUID.randomUUID())
-    val anotherUserId: AccountId = AccountId(UUID.randomUUID())
-    val email: Email             = Email("test@example.org")
-    val token: Token             = Token("token")
-    val anotherToken: Token      = Token("another-token")
+    val accountId: ID        = AccountId(UUID.randomUUID())
+    val anotherAccountId: ID = AccountId(UUID.randomUUID())
+    val email: Email         = Email("test@example.org")
+    val token: Token         = Token("token")
+    val anotherToken: Token  = Token("another-token")
 
-    val startRegistration: Command = Command.StartRegistration(userId, email, token)
-    val registrationStarted: Event = Event.RegistrationStarted(userId, email, token)
-    val confirmEmail: Command      = Command.ConfirmEmail(userId, token)
+    val startRegistration: C   = Command.StartRegistration(accountId, email, token)
+    val registrationStarted: E = Event.RegistrationStarted(accountId, email, token)
+    val confirmEmail: C        = Command.ConfirmEmail(accountId, token)
 
-    val commands: List[Command] =
+    val commands: List[C] =
       List(startRegistration, confirmEmail)
 
-    val commandsWrongIdentity: List[Command] =
+    val commandsWrongIdentity: List[C] =
       List(
         startRegistration,
-        Command.ConfirmEmail(anotherUserId, token),
+        Command.ConfirmEmail(anotherAccountId, token),
       )
 
-    val commandsWrongToken: List[Command] =
+    val commandsWrongToken: List[C] =
       List(
         startRegistration,
-        Command.ConfirmEmail(userId, anotherToken),
+        Command.ConfirmEmail(accountId, anotherToken),
       )
 
-    val commandsNoTransition: List[Command] =
-      List(startRegistration, Command.DeleteDueToGDPR(userId))
+    val commandsNoTransition: List[C] =
+      List(startRegistration, Command.DeleteDueToGDPR(accountId))
   }
 }

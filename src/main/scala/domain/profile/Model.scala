@@ -3,7 +3,7 @@ package domain.profile
 
 import java.util.UUID
 
-import Lifecycles.*
+import Lifecycle.*
 
 object Model {
   final case class ProfileId(id: UUID) extends AnyVal
@@ -16,7 +16,7 @@ object Model {
     case DeleteProfile(id: ProfileId)
 
   enum State extends Lifecycle[ProfileId]:
-    case NoProfile(id: Lifecycles.NotStarted.type = NotStarted)
+    case NoProfile(id: Lifecycle.NotStarted.type = NotStarted)
     case UncompletedProfile(id: ProfileId, accountId: AccountId)
     case CompletedProfile(id: ProfileId, accountId: AccountId, address: Address)
     case DeletedProfile(id: ProfileId)

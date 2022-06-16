@@ -13,11 +13,12 @@ object Types {
   type C      = Command
   type S      = State
   type E      = Event
-  type R      = ReadModel.Model
+  type R      = ReadModel.Account
   type EE     = RegistrationError
 
-  type StateTransition = Behavior[C, S, EE]
-  type EventOutput     = Output[C, S, E]
+  type RegistrationBehavior  = Behavior[C, S, EE]
+  type RegistrationOutput    = Output[C, S, E]
+  type RegistrationInvariant = Invariant[C, S, EE]
 
   type StateMachine = FSM[EIO, C, S]
   type Transducer   = FST[EIO, C, S, E]

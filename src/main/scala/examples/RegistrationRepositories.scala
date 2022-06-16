@@ -3,18 +3,21 @@ package examples
 
 import cats.Applicative
 
-import domain.registration.Model.{ Event, State }
-import domain.registration.ReadModel.Model
+import domain.registration.Model.{ AccountId, Event, State }
+import domain.registration.ReadModel.Account
+import domain.registration.Types.*
 
 trait RegistrationRepositories[F[_]] {
-  def loadState[F[_]](using F: Applicative[F]): F[State] =
-    F.pure(State.PotentialCustomer())
+  def loadState[F[_]](using AP: Applicative[F]): UID[ID] => F[S] =
+    _ => AP.pure(State.PotentialCustomer())
 
-  def saveState[F[_]](using F: Applicative[F]): State => F[Unit] = _ => F.unit
+  def saveState[F[_]](using AP: Applicative[F]): S => F[Unit] = _ => AP.unit
 
-  def loadEventStream[F[_]](using F: Applicative[F]): F[List[Event]] =
-    F.pure(List(Data.Registration.registrationStarted))
-  def saveEvent[F[_]](using F: Applicative[F]): Event => F[Unit] = _ => F.unit
+  def loadEventStream[F[_]](using AP: Applicative[F]): UID[ID] => F[Seq[E]] =
+    _ => AP.pure(List(Data.Registration.registrationStarted))
+  def saveEvent[F[_]](using AP: Applicative[F]): E => F[Unit]           = _ => AP.unit
+  def saveEvents[F[_]](using AP: Applicative[F]): List[E] => F[Unit]    = _ => AP.unit
+  def transactionalOutbox[F[_]](using AP: Applicative[F]): E => F[Unit] = _ => AP.unit
 
-  def saveReadModel[F[_]](using F: Applicative[F]): Model => F[Unit] = _ => F.unit
+  def saveReadModel[F[_]](using AP: Applicative[F]): Account => F[Unit] = _ => AP.unit
 }
