@@ -1,9 +1,19 @@
 package org.tp.process_time_state
 
-import cats.Applicative
+import cats.MonadError
+import cats.data.NonEmptyChain
 
 object EventSourcing {
-  def reconstituteState[F[_], S, E](f: (E, S) => S)(snapshot: S)(events: List[E])(using
-      F: Applicative[F],
-  ): F[S] = events.foldLeft(F.pure(snapshot))((fs, e) => F.map(fs)(s => f(e, s)))
+  def reconstituteState[F[_], S, E, EE <: Error](
+      f: (E, S) => InvariantError[EE, S],
+  )(snapshot: S)(events: List[E])(using
+      M: MonadError[F, NonEmptyChain[EE]],
+  ): F[S] =
+    events.foldLeft(M.pure(snapshot))((fs, e) =>
+      M.flatMap(fs)(s => f(e, s).fold(M.raiseError, M.pure)),
+    )
+
+  final case class CannotReconstituteFrom[E, S](e: E, s: S) extends Error {
+    override def msg: String = s"Cannot reconstitute from Event $e and state $s"
+  }
 }
