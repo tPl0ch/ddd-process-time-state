@@ -14,7 +14,7 @@ trait RegistrationRepositories[F[_]] {
   def saveState[F[_]](using AP: Applicative[F]): S => F[Unit] = _ => AP.unit
 
   def loadEventStream[F[_]](using AP: Applicative[F]): UID[ID] => F[Seq[E]] =
-    _ => AP.pure(List(Data.Registration.registrationStarted))
+    _ => AP.pure(List(Data.Registration.registrationStartedEvent))
   def saveEvent[F[_]](using AP: Applicative[F]): E => F[Unit]           = _ => AP.unit
   def saveEvents[F[_]](using AP: Applicative[F]): List[E] => F[Unit]    = _ => AP.unit
   def transactionalOutbox[F[_]](using AP: Applicative[F]): E => F[Unit] = _ => AP.unit

@@ -6,9 +6,6 @@ import cats.data.StateT
 import cats.implicits.*
 import cats.{ FlatMap, Monad }
 
-import Lifecycle.*
-import Transitions.*
-
 /** A Finite-State-Transducer (FST) is a function of a Command to StateF */
 type FST[F[_], -C, S, E] = C => StateT[F, S, E]
 

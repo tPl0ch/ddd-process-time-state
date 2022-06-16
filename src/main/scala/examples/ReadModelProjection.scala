@@ -6,7 +6,6 @@ import cats.effect.{ IO, IOApp }
 import cats.implicits.*
 
 import Data.*
-import Lifecycle.NotStarted
 import domain.registration.Machines.*
 import domain.registration.Model.Event.*
 import domain.registration.ReadModel.Account.*

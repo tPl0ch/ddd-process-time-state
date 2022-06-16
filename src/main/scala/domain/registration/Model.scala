@@ -3,11 +3,6 @@ package domain.registration
 
 import java.util.UUID
 
-import cats.data.{ EitherT, NonEmptyChain }
-import cats.effect.IO
-
-import Lifecycle.*
-
 object Model {
 
   final case class AccountId(id: UUID)  extends AnyVal

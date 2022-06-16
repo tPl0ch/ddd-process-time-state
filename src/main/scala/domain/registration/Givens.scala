@@ -3,13 +3,12 @@ package domain.registration
 
 import cats.kernel.Eq
 
-import Lifecycle.*
 import domain.registration.Model.State
 import domain.registration.Types.*
 
 object Givens {
-  given isFinalState: HasEnded[State] with
-    override def apply(s: State): Boolean = s match
+  given isFinalState: HasEnded[S] with
+    override def apply(s: S): Boolean = s match
       case _: State.Active => true
       case _               => false
 

@@ -5,8 +5,6 @@ import cats.data.{ EitherT, NonEmptyChain }
 import cats.effect.IO
 import cats.implicits.*
 
-import Invariants.*
-import Transitions.*
 import domain.registration.Errors.*
 import domain.registration.Givens.given
 import domain.registration.Model.*

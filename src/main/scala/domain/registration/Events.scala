@@ -1,9 +1,6 @@
 package org.tp.process_time_state
 package domain.registration
 
-import cats.syntax.validated.*
-
-import Transitions.*
 import domain.registration.Behaviors.*
 import domain.registration.Givens.given
 import domain.registration.Model.{ Command, Event, State }

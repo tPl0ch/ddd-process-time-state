@@ -1,6 +1,7 @@
 package org.tp.process_time_state
 
-import Lifecycle.NotStarted
+/** Represents a state before any lifecycle has started. */
+case object NotStarted
 
 /** The UID[ID] type represents a Union of the Aggregate's concrete ID type and the PreGenesis
   * state.
@@ -21,16 +22,9 @@ trait Lifecycle[ID] {
   def id: UID[ID]
 }
 
-object Lifecycle {
-
-  /** Represents a state before any lifecycle has started. */
-  case object NotStarted
-
-  /** This error indicates when the Aggregate is in a final state and can't process any more
-    * commands
-    */
-  final case class LifecycleHasEnded[C, S](c: C, s: S) extends Error {
-    override def msg: String =
-      s"Command $c cannot be processed because state $s is final"
-  }
+/** This error indicates when the Aggregate is in a final state and can't process any more commands
+  */
+final case class LifecycleHasEnded[C, S](c: C, s: S) extends Error {
+  override def msg: String =
+    s"Command $c cannot be processed because state $s is final"
 }

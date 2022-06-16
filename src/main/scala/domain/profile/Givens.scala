@@ -3,7 +3,6 @@ package domain.profile
 
 import cats.kernel.Eq
 
-import Lifecycle.*
 import domain.profile.Errors.*
 import domain.profile.Model.*
 import domain.profile.Types.*
@@ -18,7 +17,7 @@ object Givens {
   given accountIdEquals: Eq[Lifecycle[ProfileId]] with
     override def eqv(x: Lifecycle[ProfileId], y: Lifecycle[ProfileId]): Boolean =
       (x.id, y.id) match
-        case (a: ProfileId, b: ProfileId)      => a.id.equals(b.id)
-        case (_: Lifecycle.NotStarted.type, _) => false // Commands should always have an identity
-        case (_, _: Lifecycle.NotStarted.type) => true  // If there is a pre-genesis state, allow
+        case (a: ProfileId, b: ProfileId) => a.id.equals(b.id)
+        case (_: NotStarted.type, _)      => false // Commands should always have an identity
+        case (_, _: NotStarted.type)      => true  // If there is a pre-genesis state, allow
 }

@@ -4,7 +4,6 @@ package domain.profile
 import cats.implicits.*
 import cats.syntax.validated.*
 
-import Transitions.*
 import domain.profile.Errors.ProfileError
 import domain.profile.Givens.given
 import domain.profile.Model.*

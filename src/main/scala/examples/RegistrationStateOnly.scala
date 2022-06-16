@@ -5,7 +5,6 @@ import cats.data.StateT
 import cats.effect.{ IO, IOApp }
 import cats.implicits.*
 
-import Lifecycle.NotStarted
 import domain.registration.Givens.given
 import domain.registration.Machines.*
 import domain.registration.Types.*

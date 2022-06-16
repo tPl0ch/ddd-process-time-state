@@ -7,7 +7,6 @@ import cats.implicits.*
 import cats.syntax.validated.*
 
 import EventSourcing.*
-import Lifecycle.NotStarted
 import domain.registration.Machines.*
 import domain.registration.Model.*
 import domain.registration.Types.*

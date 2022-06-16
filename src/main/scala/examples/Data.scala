@@ -16,9 +16,11 @@ object Data {
     val token: Token         = Token("token")
     val anotherToken: Token  = Token("another-token")
 
-    val startRegistration: C   = Command.StartRegistration(accountId, email, token)
-    val registrationStarted: E = Event.RegistrationStarted(accountId, email, token)
-    val confirmEmail: C        = Command.ConfirmEmail(accountId, token)
+    val startRegistration: C        = Command.StartRegistration(accountId, email, token)
+    val registrationStartedEvent: E = Event.RegistrationStarted(accountId, email, token)
+    val confirmEmail: C             = Command.ConfirmEmail(accountId, token)
+
+    def missingEventOutput: OutputsK[EIO, C, S, E] = registrationStarted.liftF
 
     val commands: List[C] =
       List(startRegistration, confirmEmail)
