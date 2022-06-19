@@ -18,7 +18,7 @@ object VariousErrorScenarios extends IOApp.Simple with RegistrationRepositories[
 
   def runErrorSequence(commands: Seq[C]): IO[Unit] = RegistrationStateOnly
     .accountRegistrationIO(
-      NotStarted,
+      LifecycleNotStarted,
       commands,
     )
     .value

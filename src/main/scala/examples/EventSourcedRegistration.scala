@@ -27,7 +27,7 @@ object EventSourcedRegistration extends IOApp.Simple with RegistrationRepositori
       _        <- StateT.liftF(saveEvent[EIO](newEvent))
     } yield newEvent
 
-  val eventSourcingIO: (UID[ID], Seq[C]) => EIO[Seq[E]] = (uid, commands) =>
+  val eventSourcingIO: (Identity[ID], Seq[C]) => EIO[Seq[E]] = (uid, commands) =>
     for {
       snapshot     <- loadState[EIO](uid)
       events       <- loadEventStream[EIO](uid)

@@ -25,14 +25,14 @@ object ReadModelProjection extends IOApp.Simple with RegistrationRepositories[EI
       _         <- StateT.liftF(saveReadModel[EIO](readModel))
     } yield readModel
 
-  val projectionIO: (UID[ID], Seq[C]) => EIO[Seq[R]] = (uid, commands) =>
+  val projectionIO: (Identity[ID], Seq[C]) => EIO[Seq[R]] = (uid, commands) =>
     for {
       initialState <- loadState[EIO](uid)
       readModels   <- projection.runAllEvents(commands)(initialState)
     } yield readModels
 
   override def run: IO[Unit] = projectionIO(
-    NotStarted,
+    LifecycleNotStarted,
     Data.Registration.commands,
   ).value.flatMap(e => IO.println(e.map(_.toList)))
 }

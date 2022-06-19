@@ -16,7 +16,7 @@ object Model {
     case DeleteDueToGDPR(id: AccountId)
 
   enum State extends Lifecycle[AccountId]:
-    case PotentialCustomer(id: NotStarted.type = NotStarted)
+    case PotentialCustomer(id: LifecycleNotStarted.type = LifecycleNotStarted)
     case WaitingForEmailRegistration(
         id: AccountId,
         email: Email,

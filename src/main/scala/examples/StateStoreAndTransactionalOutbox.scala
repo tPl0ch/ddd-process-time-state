@@ -22,14 +22,14 @@ object StateStoreAndTransactionalOutbox extends IOApp.Simple with RegistrationRe
       } yield ())
     } yield event
 
-  val programEIO: (UID[ID], Seq[C]) => EIO[Seq[E]] = (uid, commands) =>
+  val programEIO: (Identity[ID], Seq[C]) => EIO[Seq[E]] = (uid, commands) =>
     for {
       initialState <- loadState[EIO](uid)
       listOfEvents <- registrationTransducer.runAllEvents(commands)(initialState)
     } yield listOfEvents
 
   override def run: IO[Unit] = programEIO(
-    NotStarted,
+    LifecycleNotStarted,
     Registration.commands,
   ).value.flatMap(e => IO.println(e.map(_.toList)))
 }

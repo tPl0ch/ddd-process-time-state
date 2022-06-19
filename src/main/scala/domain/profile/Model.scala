@@ -14,7 +14,7 @@ object Model {
     case DeleteProfile(id: ProfileId)
 
   enum State extends Lifecycle[ProfileId]:
-    case NoProfile(id: NotStarted.type = NotStarted)
+    case NoProfile(id: LifecycleNotStarted.type = LifecycleNotStarted)
     case UncompletedProfile(id: ProfileId, accountId: AccountId)
     case CompletedProfile(id: ProfileId, accountId: AccountId, address: Address)
     case DeletedProfile(id: ProfileId)

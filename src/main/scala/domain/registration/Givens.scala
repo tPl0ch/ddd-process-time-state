@@ -15,8 +15,8 @@ object Givens {
   given compareAccounts: Eq[Lifecycle[ID]] with
     override def eqv(x: Lifecycle[ID], y: Lifecycle[ID]): Boolean =
       (x.id, y.id) match
-        case (a: ID, b: ID)          => a.id.equals(b.id)
-        case (_: NotStarted.type, _) => false // Commands should always have an identity
-        case (_, _: NotStarted.type) => true  // If there is a pre-genesis state, allow
-        case _                       => false
+        case (a: ID, b: ID)                   => a.id.equals(b.id)
+        case (_: LifecycleNotStarted.type, _) => false // Commands should always have an identity
+        case (_, _: LifecycleNotStarted.type) => true  // If there is a pre-genesis state, allow
+        case _                                => false
 }

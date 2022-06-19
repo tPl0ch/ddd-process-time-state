@@ -20,7 +20,7 @@ object RegistrationStateOnly extends IOApp.Simple with RegistrationRepositories[
       _        <- StateT.liftF(saveState[EIO](newState))
     } yield ()
 
-  val accountRegistrationIO: (UID[ID], Seq[C]) => EIO[S] = (uid, commands) =>
+  val accountRegistrationIO: (Identity[ID], Seq[C]) => EIO[S] = (uid, commands) =>
     for {
       initialState <- loadState[EIO](uid)
       currentState <- stateStoringRegistration.runAllState(commands)(
@@ -30,7 +30,7 @@ object RegistrationStateOnly extends IOApp.Simple with RegistrationRepositories[
 
   override def run: IO[Unit] =
     accountRegistrationIO(
-      NotStarted,
+      LifecycleNotStarted,
       Registration.commands,
     ).value.flatMap(IO.println(_))
 }
