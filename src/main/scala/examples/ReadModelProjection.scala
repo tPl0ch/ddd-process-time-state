@@ -21,8 +21,10 @@ object ReadModelProjection extends IOApp.Simple with RegistrationRepositories[EI
 
   val projection: Projection = (c: C) =>
     for {
-      readModel <- registrationTransducer(c).map(project)
-      _         <- StateT.liftF(saveReadModel[EIO](readModel))
+      readModel <- EventSourcedRegistration
+        .eventStoringAggregate(c)
+        .map(project)
+      _ <- StateT.liftF(saveReadModel[EIO](readModel))
     } yield readModel
 
   val projectionIO: (Identity[ID], Seq[C]) => EIO[Seq[R]] = (uid, commands) =>
