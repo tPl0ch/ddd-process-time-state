@@ -3,15 +3,15 @@ package org.tp.process_time_state
 /** Represents a state before any lifecycle has started. */
 case object LifecycleNotStarted
 
-/** The UID[ID] type represents a Union of the Aggregate's concrete ID type and the PreGenesis
-  * state.
+/** The Identity[ID] type represents a Union of the Aggregate's concrete ID type and the
+  * LifecycleNotStarted state.
   */
 final type Identity[ID] = ID | LifecycleNotStarted.type
 
 /** A function that determines if a certain state is a final state. */
 final type HasEnded[S] = S => Boolean
 
-/** This trait needs to be implemented by the Command, State and Even alphabets and provides the
+/** This trait can be implemented by the Command, State and Even alphabets and provides the
   * Aggregate identity. This identity can be defined from the the outside and needs to be
   * accompanied by an EqualIdentities[ID] given instance if you want to leverage the identity guard.
   *
