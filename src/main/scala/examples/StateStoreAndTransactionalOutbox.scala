@@ -11,15 +11,18 @@ import examples.Data.*
 
 object StateStoreAndTransactionalOutbox extends IOApp.Simple with RegistrationRepositories[EIO] {
 
+  val storeAndPublish: (s: S, e: E) => StateT[EIO, S, Unit] = (s, e) =>
+    StateT.liftF(for {
+      _ <- saveState[EIO](s)
+      _ <- transactionalOutbox[EIO](e)
+    } yield ())
+
   val eventPublishingRegistration: Transducer = command =>
     val stateT = registrationTransducer(command)
     for {
       event <- stateT
       state <- stateT.get
-      _ <- StateT.liftF(for {
-        _ <- saveState[EIO](state)
-        _ <- transactionalOutbox[EIO](event)
-      } yield ())
+      _     <- storeAndPublish(state, event)
     } yield event
 
   val programEIO: (Identity[ID], Seq[C]) => EIO[Seq[E]] = (uid, commands) =>
